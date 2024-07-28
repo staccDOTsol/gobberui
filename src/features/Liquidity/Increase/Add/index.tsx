@@ -45,8 +45,8 @@ export default function AddLiquidity({
   onSelectToken: (token: TokenInfo | ApiV3Token, side: 'base' | 'quote') => void
 }) {
   const { t } = useTranslation()
-  const [addLiquidityAct, computePairAmount, addCpmmLiquidityAct] = useLiquidityStore(
-    (s) => [s.addLiquidityAct, s.computePairAmount, s.addCpmmLiquidityAct],
+  const [computePairAmount, addCpmmLiquidityAct] = useLiquidityStore(
+    (s) => [s.computePairAmount, s.addCpmmLiquidityAct],
     shallow
   )
   const epochInfo = useAppStore((s) => s.epochInfo)
@@ -181,7 +181,7 @@ export default function AddLiquidity({
       onFinally: () => setIsTxSending(false)
     }
 
-    const isCpmm = pool.programId === useAppStore.getState().programIdConfig.CREATE_CPMM_POOL_PROGRAM.toBase58()
+    const isCpmm = true
     const baseIn = focusRef.current === 'base'
 
     if (isCpmm) {
@@ -195,13 +195,6 @@ export default function AddLiquidity({
       })
       return
     }
-    addLiquidityAct({
-      poolInfo: pool as ApiV3PoolInfoStandardItem,
-      amountA: computeAmountRef.current.base,
-      amountB: computeAmountRef.current.quote,
-      fixedSide: baseIn ? 'a' : 'b',
-      ...callBacks
-    })
   }
 
   return (
