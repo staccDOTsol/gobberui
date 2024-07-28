@@ -85,7 +85,7 @@ export default function useFetchPoolByMint<T extends PoolFetchType>(
   const formattedData = useMemo(() => resData.map((i) => formatPoolData(i)), [resData]) as ReturnFormattedPoolType<T>[]
   const selectedPool = resData && poolId ? (resData.find((d) => d.id === poolId) as ReturnPoolType<T>) : undefined
   const isLoadEnded = !swrProps.isLoading && (!resData.length || !!error)
-
+// @ts-ignore
   return {
     selectedPool,
     data: resData,

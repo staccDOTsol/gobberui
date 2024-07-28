@@ -22,7 +22,7 @@ const preFetchMints: Map<string, MintData> = new Map()
 const poolLpAuthority = new Set([
   '5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1',
   '3uaZBfHPfmpAHW7dsimC1SnyR61X4bJqQZKWmRSCXJxv',
-  'GpMZbSM2GgvTKHJirzeGfMFoaZ8UR2X7F4v8vHTvxFbL'
+  'ArS2RdBKrpkBpZvka5tLFEw2SpXfi98VmF2EgjzgeG4P'
 ])
 // const LP_CACHE_KEY = '_r_lp_b2_'
 // const noneLpMintSet = new Set<string>(JSON.parse(getStorageItem(LP_CACHE_KEY) || '[]'))
@@ -63,6 +63,7 @@ const fetcher = async ([connection, publicKeyList]: [Connection, string[]]) => {
       return undefined
     })
     .filter((d) => !!d)
+    // @ts-ignore
     .concat(fetchedList.map((p) => preFetchMints.get(p)))
 
   // try {

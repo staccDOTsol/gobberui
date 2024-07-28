@@ -27,10 +27,10 @@ export function QuestionToolTip(props: {
     >
       <Box cursor={props.label ? 'pointer' : undefined}>
         {props.iconType === 'info' ? (
-          // @ts-expect-error don't why this error
+          // @ts-ignore
           <InfoCircleIcon style={{ display: 'block' }} {...props.iconProps} />
         ) : (
-          // @ts-expect-error don't why this error
+          // @ts-ignore
           <QuestionCircleIcon style={{ display: 'block' }} {...props.iconProps} />
         )}
       </Box>

@@ -271,9 +271,7 @@ export default function CreateClmmPool() {
                 initState={{
                   currentPrice: createPoolData?.extInfo.mockPoolInfo.price.toString() || currentCreateInfo.current.price,
                   priceRange: [currentCreateInfo.current.priceLower || '', currentCreateInfo.current.priceUpper || ''],
-                  startTime: createPoolData
-                    ? Number(createPoolData.extInfo.mockPoolInfo.openTime) * 1000
-                    : currentCreateInfo.current.startTime
+                  startTime:currentCreateInfo.current.startTime
                 }}
                 completed={step > 1}
                 token1={currentCreateInfo.current.token1!}

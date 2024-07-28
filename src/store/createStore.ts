@@ -26,6 +26,7 @@ const createStore = <T>(
 ) => {
   const store = create<T, MiddleWares>(
     devtools(
+      // @ts-ignore
       immer((set, get, store, $$storeMutations) => {
         // this function is to add log to redux dev tool
         const logSet: Get<Mutate<StoreApi<T>, MiddleWares>, 'setState', undefined> = (nextStateOrUpdater, shouldReplace, action) => {

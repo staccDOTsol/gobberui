@@ -234,18 +234,35 @@ export default function Pools() {
 
   const search = searchTokens.reduce((acc, cur) => acc + ',' + cur.address, '')
   const hasSearch = searchTokens.length > 0
-  const {
-    formattedData: orgData,
-    loadMore: orgLoadMore,
-    isLoadEnded: isOrgLoadedEnd,
-    isLoading: isOrgLoading
-  } = useFetchPoolList({
-    showFarms,
-    shouldFetch: !hasSearch,
-    type: activeTabItem.value,
-    order: order ? 'desc' : 'asc',
-    sort: sortKey !== 'liquidity' && sortKey !== 'default' ? `${sortKey}${timeBase}` : sortKey
-  })
+  const  [orgData, setOrgData] = useState<any>()
+  const  [orgLoadMore, setOrgLoadMore] = useState<any>()
+  const [  isOrgLoadedEnd, setIsOrgLoadedEnd]= useState<any>()
+  const [ isOrgLoading, setIsOrgLoading]  = useState<any>()
+  
+  useEffect(()=>{
+    async function woot(){
+      var {
+        formattedData: orgData,
+        loadMore: orgLoadMore,
+        isLoadEnded: isOrgLoadedEnd,
+        isLoading: isOrgLoading
+      } = 
+    await useFetchPoolList({
+      showFarms,
+      shouldFetch: !hasSearch,
+      type: activeTabItem.value,
+      order: order ? 'desc' : 'asc',
+      sort: sortKey !== 'liquidity' && sortKey !== 'default' ? `${sortKey}${timeBase}` : sortKey
+    })
+    setOrgData(orgData)
+    setOrgLoadMore(orgLoadMore)
+    setIsOrgLoadedEnd(isOrgLoadedEnd)
+    setIsOrgLoading(isOrgLoading)
+
+  }
+  woot()
+  }, [])
+  
 
   const {
     formattedData: searchMintData,
@@ -275,10 +292,12 @@ export default function Pools() {
   const isLoadEnded = hasSearch ? isSearchLoadEnded : isOrgLoadedEnd
   const loadMore = hasSearch ? () => {} : orgLoadMore
   const sortedData = useMemo(() => {
+    if (!data) return []
     // if (!favoritePools.size) return data
     const favorite: FormattedPoolInfoItem[] = []
     const normal: FormattedPoolInfoItem[] = []
-    data.forEach((p) => {
+    
+    data.forEach((p: any) => {
       if (favoritePools.has(p.id)) return favorite.push(p)
       normal.push(p)
     })

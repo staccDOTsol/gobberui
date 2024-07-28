@@ -1,5 +1,6 @@
 import { Box } from '@chakra-ui/react'
 import { TooltipProps } from 'recharts'
+// @ts-ignore
 import { NameType, ValueType } from 'recharts/src/component/DefaultTooltipContent'
 
 import { toUTC } from '@/utils/date'
