@@ -83,10 +83,6 @@ export default function useFetchPoolById<T = ApiV3PoolInfoItem>(
   }
   const isEmptyResult = !!idList.length && !isLoading && (!data || !resData.length || !!error)
 
-  useEffect(() => {
-    if (resData) resData.forEach((d) => poolInfoCache.set(d.id, d))
-  }, [resData])
-
   return {
     data: data?.data.filter(Boolean).map(formatAprData) as T[],
     dataMap,

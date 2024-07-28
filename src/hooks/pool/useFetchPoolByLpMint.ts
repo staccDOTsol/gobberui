@@ -54,12 +54,6 @@ export default function useFetchPoolByLpMint(
   }
   const isEmptyResult = !!lpMintList && !isLoading && !(data && !error)
 
-  useEffect(() => {
-    if (data)
-      data.data.forEach((d) => {
-        if (d) poolInfoCache.set(d.id, d)
-      })
-  }, [data])
 
   return {
     data: data?.data.filter((d) => !!d).map(formatAprData) as ApiV3PoolInfoStandardItem[],

@@ -59,6 +59,7 @@ import { getFavoritePoolCache, POOL_SORT_KEY } from './util'
 import i18n from '@/i18n'
 import { setUrlQuery, useRouteQuery } from '@/utils/routeTools'
 import { urlToMint, mintToUrl } from '@/utils/token'
+import { poolInfoCache } from '@/hooks/pool/formatter'
 
 export type PoolPageQuery = {
   token?: string
@@ -255,6 +256,7 @@ export default function Pools() {
       sort: sortKey !== 'liquidity' && sortKey !== 'default' ? `${sortKey}${timeBase}` : sortKey
     })
     setOrgData(orgData)
+    
     setOrgLoadMore(orgLoadMore)
     setIsOrgLoadedEnd(isOrgLoadedEnd)
     setIsOrgLoading(isOrgLoading)
@@ -263,6 +265,10 @@ export default function Pools() {
   woot()
   }, [])
   
+  useEffect(() => {
+    if (orgData) orgData.forEach((d:any) => poolInfoCache.set(d.id, d))
+  }, [orgData])
+
 
   const {
     formattedData: searchMintData,
