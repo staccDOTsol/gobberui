@@ -13,7 +13,6 @@ import {
   useDisclosure,
   VStack
 } from '@chakra-ui/react'
-import { fetchMetadata, Metadata, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 
 import router from 'next/router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -77,131 +76,7 @@ export default function PoolListItem({
     {...pool.lpMint ?? undefined}
   ])
   const [baseToken, quoteToken, lpToken] = tokens
-  const fm = useCallback(async () => {
-    if (!lpToken?.address) return;
-    
-    try {
-      const umi = createUmi('https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW').use(mplTokenMetadata());
-      const metadataPDAs = await Promise.all([
-        lpToken?.address ? PublicKey.findProgramAddressSync(
-          [
-            Buffer.from('metadata'),
-            new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s').toBuffer(),
-            new PublicKey(lpToken.address).toBuffer(),
-          ],
-          new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s')
-        )[0] : null,
-        baseToken.address ? PublicKey.findProgramAddressSync(
-          [
-            Buffer.from('metadata'),
-            new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s').toBuffer(),
-            new PublicKey(baseToken.address).toBuffer(),
-          ],
-          new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s')
-        )[0] : null,
-        quoteToken.address ? PublicKey.findProgramAddressSync(
-          [
-            Buffer.from('metadata'),
-            new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s').toBuffer(),
-            new PublicKey(quoteToken.address).toBuffer(),
-          ],
-          new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s')
-        )[0] : null
-      ]);
 
-      const [lpMetadata, baseMetadata, quoteMetadata] = await Promise.all(
-        metadataPDAs.map(pda => pda ? fetchMetadata(umi, publicKey(pda.toString())).catch(() => null) : null)
-      );
-
-      console.log(lpToken)
-      const fetchJsonData = async (uri: string) => {
-        try {
-          const response = await fetch(uri, {
-            mode: 'cors',
-            headers: {
-              'Access-Control-Allow-Origin': '*'
-            }
-          });
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return await response.json();
-        } catch (error) {
-          if (error instanceof TypeError && error.message.includes('NetworkError')) {
-            console.error('CORS error when fetching token metadata:', error);
-            // Fallback: Try fetching through a CORS proxy
-            try {
-              const proxyUrl = `https://cors-anywhere.herokuapp.com/${uri}`;
-              const proxyResponse = await fetch(proxyUrl);
-              if (!proxyResponse.ok) {
-                throw new Error(`HTTP error! status: ${proxyResponse.status}`);
-              }
-              return await proxyResponse.json();
-            } catch (proxyError) {
-              console.error('Error fetching through CORS proxy:', proxyError);
-              return null;
-            }
-          } else {
-            console.error('Error fetching token metadata:', error);
-            return null;
-          }
-      }
-    }
-      console.log(lpMetadata)
-
-      const [lpJsonData, baseJsonData, quoteJsonData] = await Promise.all([
-        lpMetadata?.uri ? fetchJsonData(lpMetadata.uri) : null,
-        baseMetadata?.uri ? fetchJsonData(baseMetadata.uri) : null,
-        quoteMetadata?.uri ? fetchJsonData(quoteMetadata.uri) : null
-      ]);
-      const resolveImageUri = async (uri: string | undefined) => {
-        if (!uri) return undefined;
-        try {
-          const response = await fetch(uri);
-          const blob = await response.blob();
-          const reader = new FileReader();
-          return new Promise((resolve, reject) => {
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        } catch (error) {
-          console.error('Error resolving image URI:', error);
-          return uri;
-        }
-      };
-
-      const [resolvedLpImage, resolvedBaseImage, resolvedQuoteImage] = await Promise.all([
-        resolveImageUri(lpJsonData?.image),
-        resolveImageUri(baseJsonData?.image),
-        resolveImageUri(quoteJsonData?.image)
-      ]);
-      console.log(lpJsonData)
-
-      setTokens(prevTokens => prevTokens.map(token => {
-        if (token.address === lpToken?.address && lpJsonData?.image) {
-        
-          return { ...token, ...lpJsonData, logoURI: resolvedLpImage };
-        }
-        if (token.address === baseToken.address && baseJsonData?.image) {
-          return { ...token, ...baseJsonData, logoURI: resolvedBaseImage };
-        }
-        if (token.address === quoteToken.address && quoteJsonData?.image) {
-          return { ...token, ...quoteJsonData, logoURI: resolvedQuoteImage };
-        }
-        return token;
-      }));
-
-      console.log('LP token metadata:', lpMetadata);
-      console.log('Base token metadata:', baseMetadata);
-      console.log('Quote token metadata:', quoteMetadata);
-    } catch (error) {
-      console.error('Error fetching LP token metadata:', error);
-    }
-  }, [lpToken?.address, baseToken.address, quoteToken.address]);
-  useEffect(() => {
-    fm();
-  }, [fm]);
   const { isOpen: isPoolDetailOpen, onOpen: onPoolDetailOpen, onClose: onPoolDetailClose } = useDisclosure()
 
   const timeData = useMemo(() => pool[field], [pool, field])
@@ -256,7 +131,6 @@ export default function PoolListItem({
     [pool, field]
   )
 
-  if (!lpToken?.logoURI || lpToken?.logoURI == "") return
   return (
     <>
       {styleType === 'list' ? (
@@ -318,8 +192,20 @@ export default function PoolListItem({
               >
                 {/* token pair avatar*/}
                 <GridItem area="a">
-                  <TokenAvatarPair token1={baseToken} token2={quoteToken} size={['sm', 'smi', 'md']} token3={lpToken}/>
+                  <TokenAvatarPair 
+                    token1={baseToken} 
+                    token2={quoteToken} 
+                    token3={lpToken} 
+                    size={['md', 'md', 'lg']} 
+                    icon1={baseToken.logoURI} 
+                    icon2={quoteToken.logoURI} 
+                    icon3={lpToken.logoURI}
+                    name1={baseToken.symbol}
+                    name2={quoteToken.symbol}
+                    name3={lpToken.symbol}
+                  />
                 </GridItem>
+
 
                 {/* name */}
                 <GridItem area="n">

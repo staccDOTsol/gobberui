@@ -70,12 +70,12 @@ export default async function useFetchPoolList<T extends PoolFetchType>(props?: 
   let error = null
 
     try {
-      const url = 'http://localhost:3002/api/gpa'
+      const url = 'https://gobbler.fun/api/gpa'
       const params: any = {
         idList: readyIdList
       }
 
-      const response = await axios.get<PoolsApiReturn>(`${url}?idList=${readyIdList ? readyIdList.join(',') : ''}`)
+      const response = await axios.post<PoolsApiReturn>(url, params)
       // @ts-ignore
       data = await response.data
      
@@ -120,6 +120,7 @@ export default async function useFetchPoolList<T extends PoolFetchType>(props?: 
   const loadMore = () => {}
   const isEmpty = isLoadEnded && (!data || !data.length)
 console.log(data)
+
   return {
     // @ts-ignore
     setSize,

@@ -5,6 +5,7 @@ import Decimal from 'decimal.js-light'
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults'
 import { fetchMetadata } from '@metaplex-foundation/mpl-token-metadata'
 import { publicKey } from '@metaplex-foundation/umi'
+import { getMint } from '@solana/spl-token'
 
 const PAGE_SIZE = 100
 
@@ -47,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Check for a cached response for all pools
       const cacheKey = 'all_pools';
       const cachedData = getFromCache(cacheKey);
-      if (cachedData) {
+      if (cachedData && cachedData.length > 5) {
         // If cache exists and is not too old, return it
         res.status(200).json(JSON.parse(cachedData));
         return;
@@ -77,7 +78,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           fetchMultipleMintInfos({connection, mints:[decodedData.mintA]}),
           fetchMultipleMintInfos({connection, mints:[decodedData.mintLp]})
         ])
-
         const [balanceA, balanceB] = await Promise.all([
           connection.getTokenAccountBalance(decodedData.vaultA),
           connection.getTokenAccountBalance(decodedData.vaultB)
@@ -215,7 +215,25 @@ pool.mintA.mintAuthority = pool.mintA.mintAuthority?.toBase58()
     }
     // Cache the result
     const cacheKey = 'all_pools';
-    await setInCache(cacheKey, JSON.stringify(poolData));
+    // Load existing cache
+    const existingCache = await getFromCache(cacheKey);
+    let existingPoolData = existingCache ? JSON.parse(existingCache) : [];
+
+    // Extend existing cache with new data
+    const updatedPoolData = [...existingPoolData, ...poolData];
+
+    // Remove duplicates based on pool ID
+    const uniquePoolData = updatedPoolData.reduce((acc, current) => {
+      const x = acc.find((item:any) => item.id === current.id);
+      if (!x) {
+        return acc.concat([current]);
+      } else {
+        return acc;
+      }
+    }, []);
+
+    // Update poolData with the unique, extended list
+    await setInCache(cacheKey, JSON.stringify(uniquePoolData));
     await setInCache(`${cacheKey}:timestamp`, Date.now().toString());
     res.status(200).json(poolData)
 }
