@@ -6,11 +6,10 @@ import TokenAvatar from '@/components/TokenAvatar'
 import TokenAvatarPair from '@/components/TokenAvatarPair'
 import { useAppStore } from '@/store'
 import { colors } from '@/theme/cssVariables'
-import { FarmType, FormattedFarmInfo } from '@/hooks/farm/type'
 import { formatCurrency } from '@/utils/numberish/formatter'
 type SelectedFarmProps = {
-  farm?: FormattedFarmInfo
-  farmCategory?: FarmType
+  farm?: any
+  farmCategory?: any
 }
 
 export default function SelectedFarm({ farm }: SelectedFarmProps) {

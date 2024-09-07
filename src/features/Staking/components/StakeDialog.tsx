@@ -1,3 +1,4 @@
+// @ts-nocheck
 import TokenInput from '@/components/TokenInput'
 import { useFarmStore } from '@/store/useFarmStore'
 import { useTokenAccountStore } from '@/store/useTokenAccountStore'

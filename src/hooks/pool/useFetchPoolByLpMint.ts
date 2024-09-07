@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { ApiV3PoolInfoStandardItem, FetchPoolParams } from '@raydium-io/raydium-sdk-v2'
 import useSWR, { KeyedMutator } from 'swr'
-import shallow from 'zustand/shallow'
+import { shallow } from 'zustand/shallow'
 import { AxiosResponse } from 'axios'
 import axios from '@/api/axios'
 import { isValidPublicKey } from '@/utils/publicKey'

@@ -6,7 +6,7 @@ import {
   ApiV3PoolInfoConcentratedItem,
   PositionUtils
 } from '@raydium-io/raydium-sdk-v2'
-import shallow from 'zustand/shallow'
+import { shallow } from 'zustand/shallow'
 import { PublicKey, Connection } from '@solana/web3.js'
 import Decimal from 'decimal.js'
 import BN from 'bn.js'

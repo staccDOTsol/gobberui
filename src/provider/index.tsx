@@ -25,7 +25,8 @@ export const Providers = ({ children }: { children: ReactNode }) => {
     >
       <ThemeProvider>
         <GlobalColorProvider>
-          <WalletProvider>{children}</WalletProvider>
+          <WalletProvider>
+         {children}</WalletProvider>
         </GlobalColorProvider>
       </ThemeProvider>
     </SWRConfig>

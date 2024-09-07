@@ -1,6 +1,6 @@
 import { useMemo, useCallback } from 'react'
 import { PoolsApiReturn, FetchPoolParams, solToWSol, ApiV3PoolInfoItem, PoolFetchType } from '@raydium-io/raydium-sdk-v2'
-import shallow from 'zustand/shallow'
+import { shallow } from 'zustand/shallow'
 import axios from '@/api/axios'
 import { MINUTE_MILLISECONDS } from '@/utils/date'
 import { useAppStore } from '@/store'

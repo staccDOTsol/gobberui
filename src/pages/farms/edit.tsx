@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import EditFarm from '@/features/Farm/Edit'
 import { useAppStore, useClmmStore } from '@/store'
 
 function FarmEditPage() {
@@ -10,7 +9,7 @@ function FarmEditPage() {
     raydium && loadAddRewardWhiteListAct({ checkFetch: true })
   }, [loadAddRewardWhiteListAct, raydium])
 
-  return <EditFarm />
+  return (<></>)
 }
 
 export default FarmEditPage

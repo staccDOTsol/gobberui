@@ -29,7 +29,7 @@ export default function Header() {
   return (
     <>
       <Flex justify={['center', 'flex-start']} pl={[0, 77]} py={6}>
-        <Logo />
+        I promsie Ray I'll rebrand this sewn tm
       </Flex>
       <Flex
         position="fixed"
@@ -41,8 +41,8 @@ export default function Header() {
         bg="#132141"
         w="100%"
         zIndex="10"
-      >
-        <LogoLegacy />
+      ><Flex>        I promsie Ray I'll rebrand this sewn tm
+</Flex>
         <Button ml={[4, 0]} w={['fit-content', '180px']} size={['sm', 'md']}>
           Launch App
         </Button>

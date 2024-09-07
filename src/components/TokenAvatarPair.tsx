@@ -7,6 +7,10 @@ type RawTokenAvatarPairProps = {
   token2?: TokenInfo | ApiV3Token
   tokenMint1?: string
   tokenMint2?: string
+  token3?: TokenInfo | ApiV3Token
+  tokenMint3?: string
+  icon3?: string
+  name3?: string
 
   /** sx: 16px | sm: 20px | smi: 24px | md: 32px | lg: 48px | 2xl: 80px | (default: md) */
   size?: TokenAvatarSize | TokenAvatarSize[]
@@ -38,22 +42,37 @@ const parseSize = (size?: TokenAvatarSize) => sizeMap[size || 'md'] || '-4px'
 export default function TokenAvatarPair({
   token1,
   token2,
+  token3,
   tokenMint1,
   tokenMint2,
+  tokenMint3,
   icon1,
   icon2,
+  icon3,
   size,
   bgBlur = true,
   name1,
   name2,
+  name3,
   ...restProps
 }: TokenAvatarPairProps) {
   const marginLeft = Array.isArray(size) ? size.map((s) => parseSize(s)) : parseSize(size)
-
+console.log(token3)
   return (
     <Flex {...restProps}>
       <TokenAvatar bgBlur={bgBlur} size={size} token={token1} tokenMint={tokenMint1} icon={icon1} name={name1} />
       <TokenAvatar bgBlur={bgBlur} size={size} token={token2} tokenMint={tokenMint2} icon={icon2} name={name2} marginLeft={marginLeft} />
+      {token3 && (
+        <TokenAvatar
+          bgBlur={bgBlur}
+          size={size}
+          token={token3}
+          tokenMint={tokenMint3}
+          icon={icon3}
+          name={name3}
+          marginLeft={marginLeft}
+        />
+      )}
     </Flex>
   )
 }

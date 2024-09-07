@@ -34,7 +34,7 @@ import { useAppStore, supportedExplorers } from '@/store/useAppStore'
 export default function PoolInfo({ pool }: { pool?: FormattedPoolInfoStandardItem }) {
   const { t } = useTranslation()
   const [baseToken, quoteToken] = [pool?.mintA, pool?.mintB]
-
+console.log(pool)
   const feeApr = pool?.allApr.week.find((s) => s.isTradingFee)
   const rewardApr = pool?.allApr.week.filter((s) => !s.isTradingFee && !!s.token) || []
   const aprData = useMemo(

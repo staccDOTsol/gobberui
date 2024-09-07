@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Box } from '@chakra-ui/react'
 import PageHeroTitle from '@/components/PageHeroTitle'
-import SectionMyCreatedFarms, { CreateFarmTabValues } from './components/SectionMyFarms'
 import SectionMyPositions from './components/SectionMyPositions'
 import { PositionTabValues } from '@/hooks/portfolio/useAllPositionInfo'
 import SectionOverview from './components/SectionOverview'
@@ -12,7 +11,7 @@ import { AcceleraytorAlertChip } from './AcceleraytorAlertChip'
 export type PortfolioPageQuery = {
   section?: 'overview' | 'my-positions' | 'my-created-farm' | 'acceleraytor'
   position_tab?: PositionTabValues
-  create_farm_tab?: CreateFarmTabValues
+  create_farm_tab?: any
 }
 
 export default function Portfolio() {
@@ -26,7 +25,6 @@ export default function Portfolio() {
       <AcceleraytorAlertChip />
       <SectionOverview />
       <SectionMyPositions />
-      <SectionMyCreatedFarms />
       <SectionAcceleraytor />
       <Box pb={'40px'} />
     </Box>

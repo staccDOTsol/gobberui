@@ -3,7 +3,7 @@ import { fetchMultipleInfo, AmmV4Keys, AmmV5Keys } from '@raydium-io/raydium-sdk
 import { useAppStore } from '@/store'
 import { MINUTE_MILLISECONDS } from '@/utils/date'
 import useSWR from 'swr'
-import shallow from 'zustand/shallow'
+import { shallow } from 'zustand/shallow'
 import BN from 'bn.js'
 import axios from '@/api/axios'
 

@@ -39,3 +39,6 @@ tsconfig.tsbuildinfo
 
 # Sentry
 .sentry.properties
+
+# Local Netlify folder
+.netlify

@@ -87,10 +87,15 @@ export const useTokenAccountStore = createStore<TokenAccountStore>(
   (set, get) => ({
     ...initTokenAccountSate,
     updateTokenAccountAct: () => {
+      console.log('Starting updateTokenAccountAct');
       const owner = useAppStore.getState().publicKey!
+      if (!owner) return
+      console.log('Owner:', owner.toString());
+      
       const readyUpdateDataMap: Map<string, TokenAccount> = new Map()
       const readyUpdateRawDataMap: Map<string, TokenAccountRaw> = new Map()
 
+      console.log('Processing batchUpdateAccountData');
       Array.from(batchUpdateAccountData.tokenAccounts.entries()).forEach(([publicKey, data]) => {
         const accountInfo = splAccountLayout.decode(data.accountInfo.data)
         const { mint, amount } = accountInfo
@@ -106,13 +111,18 @@ export const useTokenAccountStore = createStore<TokenAccountStore>(
         readyUpdateDataMap.set(publicKey, updateData)
         readyUpdateRawDataMap.set(publicKey, { pubkey: accountPublicKey, accountInfo, programId: tokenProgram })
       })
+      console.log('Processed batchUpdateAccountData. readyUpdateDataMap size:', readyUpdateDataMap.size);
 
       const { tokenAccounts, tokenAccountRawInfos } = get()
+      console.log('Current tokenAccounts count:', tokenAccounts.length);
       const updatedSet = new Set()
-      const newTokenAccountMap: Map<string, TokenAccount[]> = new Map()
+      console.log('Creating new token account map');
+      const newTokenAccountMap: Map<string, TokenAccount[]> = new Map();
+      console.log('New token account map created:', newTokenAccountMap);
       const newTokenAccounts = tokenAccounts
         .map((acc) => {
           if (batchUpdateAccountData.solAmount && acc.mint.equals(PublicKey.default)) {
+            console.log('Updating SOL account');
             const updateData = { ...acc, amount: batchUpdateAccountData.solAmount }
             newTokenAccountMap.set(PublicKey.default.toString(), [updateData])
             return updateData
@@ -130,14 +140,18 @@ export const useTokenAccountStore = createStore<TokenAccountStore>(
 
           if (updateData) {
             updatedSet.add(accPubicKey)
+            console.log('Updated account:', accPubicKey);
             return updateData
           }
           return acc
         })
         .filter((acc) => !batchUpdateAccountData.deleteAccount.has(acc.publicKey?.toString() || ''))
+      console.log('Processed existing accounts. New count:', newTokenAccounts.length);
 
       if (updatedSet.size !== readyUpdateDataMap.size) {
+        console.log('Processing new ATAs');
         const newAtaList = Array.from(readyUpdateDataMap.values()).filter((tokenAcc) => !updatedSet.has(tokenAcc.publicKey?.toString()))
+        console.log('New ATA count:', newAtaList.length);
         if (newAtaList.length)
           newAtaList.forEach((data) => {
             const mintStr = data.mint.toString()
@@ -148,26 +162,32 @@ export const useTokenAccountStore = createStore<TokenAccountStore>(
             } else {
               newTokenAccountMap.get(mintStr)!.push(data)
             }
+            console.log('Added new ATA for mint:', mintStr);
           })
       }
       updatedSet.clear()
 
+      console.log('Processing raw token account infos');
       const newTokenAccountRawInfos = tokenAccountRawInfos
         .map((acc) => {
           acc.accountInfo.amount = batchUpdateAccountData.deleteAccount.has(acc.pubkey.toString()) ? new BN(0) : acc.accountInfo.amount
           const updateData = readyUpdateRawDataMap.get(acc.pubkey.toString())
           if (updateData) {
             updatedSet.add(acc.pubkey.toString())
+            console.log('Updated raw account info:', acc.pubkey.toString());
             return updateData
           }
           return acc
         })
         .filter((acc) => !batchUpdateAccountData.deleteAccount.has(acc.pubkey.toString()))
+      console.log('Processed raw token account infos. New count:', newTokenAccountRawInfos.length);
 
       if (updatedSet.size !== readyUpdateDataMap.size) {
+        console.log('Processing new raw ATAs');
         const newAtaList = Array.from(batchUpdateAccountData.tokenAccounts.values()).filter(
           (tokenAcc) => !updatedSet.has(tokenAcc.accountId.toString())
         )
+        console.log('New raw ATA count:', newAtaList.length);
         if (newAtaList.length)
           newAtaList.forEach((data) =>
             newTokenAccountRawInfos.push({
@@ -178,6 +198,7 @@ export const useTokenAccountStore = createStore<TokenAccountStore>(
           )
       }
 
+      console.log('Setting new state');
       set(
         {
           tokenAccounts: newTokenAccounts,
@@ -190,30 +211,39 @@ export const useTokenAccountStore = createStore<TokenAccountStore>(
           type: 'updateTokenAccountAct'
         }
       )
+      console.log('State updated successfully');
     },
     fetchTokenAccountAct: async ({ commitment, forceFetch }) => {
+      console.log('Starting fetchTokenAccountAct');
       const { connection, publicKey: owner } = useAppStore.getState()
-      if (!owner || !connection) return
-      if (!forceFetch && (loading || (Date.now() - lastFetchTime < 3000 && owner.equals(preOwner) && commitment === preCommitment))) return
+      if (!owner || !connection) {
+        console.log('No owner or connection, exiting');
+        return;
+      }
+      if (!forceFetch && (loading || (Date.now() - lastFetchTime < 3000 && owner.equals(preOwner) && commitment === preCommitment))) {
+        console.log('Skipping fetch due to recent update or loading state');
+        return;
+      }
       preCommitment = commitment
       loading = true
       preOwner = owner
       try {
-        logMessage('rpc: get owner acc info')
+        console.log('Fetching owner account info');
         const solAccountResp = await retry<Promise<AccountInfo<Buffer>>>(() =>
           connection.getAccountInfo(owner, { commitment: useAppStore.getState().commitment })
         )
-        logMessage('rpc: get owner token acc info')
+        console.log('Fetching owner token account info');
         const tokenAccountResp = await retry<Promise<RpcResponseAndContext<GetProgramAccountsResponse>>>(() =>
           connection.getTokenAccountsByOwner(owner, { programId: TOKEN_PROGRAM_ID }, { commitment: useAppStore.getState().commitment })
         )
-        logMessage('rpc: get owner token2022 acc info')
+        console.log('Fetching owner token2022 account info');
         const token2022Req = await retry<Promise<RpcResponseAndContext<GetProgramAccountsResponse>>>(() =>
           connection.getTokenAccountsByOwner(owner, { programId: TOKEN_2022_PROGRAM_ID }, { commitment: useAppStore.getState().commitment })
         )
 
         lastFetchTime = Date.now()
         loading = false
+        console.log('Parsing token account response');
         const tokenAccountData = parseTokenAccountResp({
           owner,
           solAccountResp,
@@ -224,6 +254,7 @@ export const useTokenAccountStore = createStore<TokenAccountStore>(
         })
 
         const tokenAccountMap: Map<string, TokenAccount[]> = new Map()
+        console.log('Processing token accounts');
         tokenAccountData.tokenAccounts.forEach((tokenAccount) => {
           const mintStr = tokenAccount.mint?.toBase58()
           if (!tokenAccountMap.has(mintStr)) {
@@ -233,11 +264,13 @@ export const useTokenAccountStore = createStore<TokenAccountStore>(
           tokenAccountMap.get(mintStr)!.push(tokenAccount)
         })
 
+        console.log('Sorting token accounts');
         tokenAccountMap.forEach((tokenAccount) => {
           tokenAccount.sort((a, b) => (a.amount.lt(b.amount) ? 1 : -1))
         })
 
         clearUpdateTokenAccData()
+        console.log('Setting new state');
         set(
           {
             ...tokenAccountData,
@@ -251,6 +284,7 @@ export const useTokenAccountStore = createStore<TokenAccountStore>(
           }
         )
 
+        console.log('Sorting token list');
         const tokenList = useTokenStore.getState().tokenList.sort((tokenA, tokenB) => {
           const accountA = tokenAccountMap.get(tokenA.address)
           const accountB = tokenAccountMap.get(tokenB.address)
@@ -260,10 +294,14 @@ export const useTokenAccountStore = createStore<TokenAccountStore>(
           if (amountB.eq(amountA)) return 0
           return -1
         })
+        console.log('Updating token store');
         useTokenStore.setState({ tokenList: JSON.parse(JSON.stringify(tokenList)) }, false, { type: 'fetchTokenAccountAct' })
+        console.log('Updating app store');
         useAppStore.setState({ tokenAccLoaded: true })
+        console.log('fetchTokenAccountAct completed successfully');
       } catch (e: any) {
         loading = false
+        console.error('Error in fetchTokenAccountAct:', e);
         toastSubject.next({
           status: 'error',
           title: 'fetch token account error',
@@ -272,6 +310,7 @@ export const useTokenAccountStore = createStore<TokenAccountStore>(
       }
     },
     getTokenBalanceUiAmount: ({ mint: mintKey, decimals, isNative = true }) => {
+      console.log('Starting getTokenBalanceUiAmount for mint:', mintKey?.toString());
       const mint = mintKey?.toString()
       const defaultVal = {
         rawAmount: new Decimal(0),
@@ -285,27 +324,41 @@ export const useTokenAccountStore = createStore<TokenAccountStore>(
 
       const tokenInfo = useTokenStore.getState().tokenMap.get(mint)
       const tokenDecimal = decimals ?? tokenInfo?.decimals ?? 6
+      console.log('Token decimals:', tokenDecimal);
       const tokenAccount =
         get()
           .tokenAccountMap.get(mint)
           ?.find((acc) => acc.isAssociated || acc.isNative === isNative) || get().tokenAccountMap.get(mint)?.[0]
-      if (!tokenAccount) return defaultVal
-      if (!tokenInfo && decimals === undefined) return defaultVal
+      if (!tokenAccount) {
+        
+
+        console.log('No token account found, returning default value');
+        return defaultVal;
+      }
+      if (!tokenInfo && decimals === undefined) {
+
+        console.log('No token info and no decimals provided, returning default value');
+        return defaultVal;
+      }
 
       let amount = new Decimal(tokenAccount.amount.toString())
+      console.log('Raw amount:', amount.toString());
       // wsol might have lots of ata, so sum them up
       if (mint === WSOLMint.toBase58()) {
+        console.log('Processing WSOL');
         amount = new Decimal(0)
         get()
           .tokenAccountMap.get(mint)!
           .forEach((acc) => {
             amount = amount.add(acc.amount.toString())
           })
+        console.log('Total WSOL amount:', amount.toString());
       }
 
       const decimalAmount = new Decimal(amount.toString()).div(10 ** tokenDecimal)
+      console.log('Decimal amount:', decimalAmount.toString());
 
-      return {
+      const result = {
         rawAmount: amount,
         amount: decimalAmount,
         decimals: tokenDecimal,
@@ -313,37 +366,54 @@ export const useTokenAccountStore = createStore<TokenAccountStore>(
         localeText: formatLocaleStr(decimalAmount.toFixed(tokenDecimal, Decimal.ROUND_FLOOR), tokenDecimal)!,
         isZero: amount.eq(0),
         gt: (val: string) => !!val && amount.gt(val)
-      }
+      };
+      console.log('Returning result:', result);
+      return result;
     },
     migrateATAAct: async ({ migrateAccounts, ...txProps }) => {
+      console.log('Starting migrateATAAct');
       const { connection, publicKey, signAllTransactions } = useAppStore.getState()
       const tokenAccounts = get().tokenAccounts
-      if (!connection || !publicKey || !signAllTransactions || !tokenAccounts.length) return
+      if (!connection || !publicKey || !signAllTransactions || !tokenAccounts.length) {
+        console.log('Missing required data, exiting');
+        return;
+      }
 
+      console.log('Creating TxBuilder');
       const txBuilder = new TxBuilder({ connection, cluster: 'mainnet', feePayer: publicKey, signAllTransactions })
 
+      console.log('Processing migrateAccounts');
       migrateAccounts.forEach((tokenAcc) => {
-        if (!tokenAcc.publicKey) return
+        if (!tokenAcc.publicKey) {
+          console.log('Skipping account without publicKey');
+          return;
+        }
         const ata = getAssociatedTokenAddressSync(tokenAcc.mint, publicKey!, false, tokenAcc.programId)
         const ataExists = !!tokenAccounts.find((acc) => acc.publicKey && acc.publicKey.equals(tokenAcc.publicKey!))
-        if (!ataExists)
+        if (!ataExists) {
+          console.log('Adding instruction to create ATA');
           txBuilder.addInstruction({
             instructions: [createAssociatedTokenAccountInstruction(publicKey, ata, publicKey, tokenAcc.mint, tokenAcc.programId)]
           })
+        }
 
-        if (!tokenAcc.amount.isZero())
+        if (!tokenAcc.amount.isZero()) {
+          console.log('Adding instruction to transfer tokens');
           txBuilder.addInstruction({
             instructions: [
               createTransferInstruction(tokenAcc.publicKey, ata, publicKey, BigInt(tokenAcc.amount.toString()), [], tokenAcc.programId)
             ]
           })
+        }
 
+        console.log('Adding instruction to close account');
         txBuilder.addInstruction({
           instructions: [createCloseAccountInstruction(tokenAcc.publicKey, publicKey, publicKey, [], tokenAcc.programId)]
         })
       })
 
       if (!txBuilder.allInstructions.length) {
+        console.log('No instructions to execute');
         toastSubject.next({
           status: 'error',
           title: 'Migrate ATA',
@@ -351,14 +421,17 @@ export const useTokenAccountStore = createStore<TokenAccountStore>(
         })
         return
       }
+      console.log('Executing transaction');
       txBuilder
         .build()
         .execute()
         .then(({ txId, signedTx }) => {
+          console.log('Transaction executed successfully. TxId:', txId);
           txStatusSubject.next({ txId, signedTx })
           txProps.onSent?.()
         })
         .catch((e) => {
+          console.error('Error executing transaction:', e);
           toastSubject.next({ txError: e })
           txProps.onError?.()
         })

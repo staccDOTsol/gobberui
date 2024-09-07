@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { PublicKey } from '@solana/web3.js'
-import shallow from 'zustand/shallow'
+import { shallow } from 'zustand/shallow'
 import { PoolInfoLayout, SqrtPriceMath, ApiV3Token, ApiClmmConfigV3 } from '@raydium-io/raydium-sdk-v2'
 
 import { useAppStore } from '@/store'

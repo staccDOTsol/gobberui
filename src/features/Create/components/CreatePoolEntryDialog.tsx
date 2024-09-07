@@ -1,3 +1,4 @@
+import ListItem from '@/components/ListItem'
 import { Desktop, Mobile } from '@/components/MobileDesktop'
 import CircleCheck from '@/icons/misc/CircleCheck'
 import { colors } from '@/theme/cssVariables'
@@ -24,6 +25,7 @@ import {
   ModalOverlay,
   Stack,
   Text,
+  UnorderedList,
   VStack
 } from '@chakra-ui/react'
 import { useRouter } from 'next/router'
@@ -47,7 +49,7 @@ export function CreatePoolEntryDialog({
   const onConfirm = useCallback(() => {
     const isStandardAmm = type === 'standard-amm'
     const isStandardFarm = type === 'standard-farm'
-    const to = isStandardAmm ? '/liquidity/create-pool' : isStandardFarm ? '/liquidity/create-farm' : '/clmm/create-pool'
+    const to = true ? '/liquidity/create-pool' : isStandardFarm ? '/liquidity/create-farm' : '/clmm/create-pool'
     router.push({
       pathname: to,
       query: {
@@ -147,26 +149,24 @@ export function CreatePoolEntryDialogBody({ type, onChange }: { type: CreateTarg
       <CreateBlock
         title={t('create_pool.modal_section_header_pool')}
         description={
-          <Trans i18nKey="create_pool.modal_section_header_pool_desc">
-            <Link href="https://docs.raydium.io/raydium/pool-creation/creating-a-clmm-pool-and-farm" isExternal>
-              CLMM
-            </Link>
-            <Link href="https://docs.raydium.io/raydium/pool-creation/creating-a-standard-amm-pool" isExternal>
-              Standard
-            </Link>
-          </Trans>
+          <Text>
+            Create a liquidity pool for any token pair. The Fomo3D Raydium CP Swap Client offers a unique Solana-based AMM with features like:
+            
+            <UnorderedList spacing={2} mt={2}>
+              <ListItem>Exponential LP token curve: Early liquidity providers potentially earn more rewards</ListItem>
+              <ListItem>Flat-rate fees: Beneficial for larger trades (e.g. 0.000025 SOL and 0.025 USDC per trade)</ListItem>
+              <ListItem>Customizable LP token metadata: Enhances utility in the broader DeFi ecosystem</ListItem>
+              <ListItem>Constant product formula for token pricing</ListItem>
+              <ListItem>Fee split between liquidity providers and protocol creator</ListItem>
+            </UnorderedList>
+          </Text>
         }
         selected={type === 'concentrated-liquidity' || type === 'standard-amm'}
         renderPoolType={
           type === 'concentrated-liquidity' || type === 'standard-amm'
             ? () => (
                 <Stack flexDirection={['column', 'row']}>
-                  <PoolTypeItem
-                    isSuggested
-                    isActive={type === 'concentrated-liquidity'}
-                    name={t('create_pool.modal_tab_concentrated')}
-                    onClickSelf={() => onChange('concentrated-liquidity')}
-                  />
+                
                   <PoolTypeItem
                     isActive={type === 'standard-amm'}
                     name={t('create_pool.modal_tab_standard_amm')}
@@ -178,21 +178,7 @@ export function CreatePoolEntryDialogBody({ type, onChange }: { type: CreateTarg
         }
         onClick={() => onChange('concentrated-liquidity')}
       />
-      <CreateBlock
-        title={t('create_pool.modal_section_header_farm')}
-        description={
-          <Trans i18nKey="create_pool.modal_section_header_farm_desc">
-            <Link href="https://docs.raydium.io/raydium/pool-creation/creating-a-clmm-pool-and-farm" isExternal>
-              CLMM
-            </Link>
-            <Link href="https://docs.raydium.io/raydium/pool-creation/creating-a-standard-amm-pool/creating-an-ecosystem-farm" isExternal>
-              Standard
-            </Link>
-          </Trans>
-        }
-        selected={type === 'standard-farm'}
-        onClick={() => onChange('standard-farm')}
-      />
+    
     </Flex>
   )
 }

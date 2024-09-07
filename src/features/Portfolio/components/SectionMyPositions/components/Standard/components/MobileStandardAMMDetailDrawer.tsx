@@ -1,5 +1,4 @@
 import { FormattedPoolInfoStandardItem } from '@/hooks/pool/type'
-import { FarmPositionInfo } from '@/hooks/portfolio/farm/useFarmPositions'
 import { colors } from '@/theme/cssVariables'
 import {
   Box,
@@ -24,7 +23,6 @@ import StandardPoolAPR from '../ItemDetail/StandardPoolAPR'
 import TokenPooledInfo from '../ItemDetail/TokenInfo'
 import StandardPoolRowStakeFarmHoldItem from './StandardPoolRowStakeFarmHoldItem'
 import StandardPoolRowStakeFarmItem from './StandardPoolRowStakeFarmItem'
-import { FarmBalanceInfo } from '@/hooks/farm/type'
 import { useTranslation } from 'react-i18next'
 import { ApiV3Token } from '@raydium-io/raydium-sdk-v2'
 
@@ -53,7 +51,7 @@ export default function MobileStandardAMMDetailDrawer({
   hasStakeFarm: boolean
   stakeFarmCount: number
   lpAmountUSD: string
-  stakedFarms: FarmPositionInfo['data']
+  stakedFarms: any['data']
   pendingReward: string
   positionStatus: string
   pooledAmountA: string
@@ -61,7 +59,7 @@ export default function MobileStandardAMMDetailDrawer({
   isLoading: boolean
   canStake: boolean
   rewardInfo: { mint: ApiV3Token; amount: string; amountUSD: string }[]
-  allFarmBalances: FarmBalanceInfo[]
+  allFarmBalances: any[]
   onUpdatePendingReward: (params: {
     farmId: string
     reward: { mint: ApiV3Token[]; usd: string; amount: string[]; rewardTokenUsd: string[] }
@@ -135,7 +133,7 @@ export default function MobileStandardAMMDetailDrawer({
               {hasStakeFarm && (
                 <Box>
                   <VStack gap={3}>
-                    {stakedFarms.map((stakeFarm) => (
+                    {stakedFarms.map((stakeFarm: any) => (
                       <StandardPoolRowStakeFarmItem
                         key={stakeFarm.farmId}
                         farmId={stakeFarm.farmId}

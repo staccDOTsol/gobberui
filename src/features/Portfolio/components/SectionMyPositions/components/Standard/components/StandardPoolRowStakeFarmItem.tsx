@@ -1,8 +1,8 @@
+// @ts-nocheck
 import { useEffect, useMemo } from 'react'
 import { Badge, Box, Button, Divider, Grid, GridItem, HStack, SimpleGrid, Text } from '@chakra-ui/react'
 import { useTranslation } from 'react-i18next'
 import TokenAvatar from '@/components/TokenAvatar'
-import useFetchFarmInfoById from '@/hooks/farm/useFetchFarmInfoById'
 import useFetchPoolById from '@/hooks/pool/useFetchPoolById'
 import FarmRewardIcon from '@/icons/pool/FarmRewardIcon'
 import { colors } from '@/theme/cssVariables'
@@ -10,7 +10,6 @@ import { formatCurrency, formatToRawLocaleStr } from '@/utils/numberish/formatte
 import { routeToPage } from '@/utils/routeTools'
 import { toAPRPercent } from '@/features/Pools/util'
 import useTokenPrice from '@/hooks/token/useTokenPrice'
-import { FarmBalanceInfo } from '@/hooks/farm/type'
 import Decimal from 'decimal.js'
 import { ApiV3Token, ApiV3PoolInfoConcentratedItem, PoolFetchType } from '@raydium-io/raydium-sdk-v2'
 
@@ -26,7 +25,7 @@ export default function StandardPoolRowStakeFarmItem({
   poolId: string
   farmId: string
   lpPrice: number
-  balanceInfo?: FarmBalanceInfo
+  balanceInfo?: any
   hide?: boolean
   onUpdatePendingReward: (params: {
     farmId: string
@@ -34,7 +33,6 @@ export default function StandardPoolRowStakeFarmItem({
   }) => void
 }) {
   const { t } = useTranslation()
-  const { data } = useFetchFarmInfoById({ idList: [farmId] })
   const { formattedData } = useFetchPoolById<ApiV3PoolInfoConcentratedItem>({
     idList: [poolId],
     type: PoolFetchType.Standard

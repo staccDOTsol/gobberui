@@ -1,6 +1,6 @@
-import { useEffect, useCallback, useState, useRef } from 'react'
-import { Box, Flex, HStack, Text, VStack, useDisclosure } from '@chakra-ui/react'
-import shallow from 'zustand/shallow'
+import { useEffect, useCallback, useState, useRef, useMemo } from 'react'
+import { Box, Flex, FormControl, FormLabel, HStack, Input, Text, Textarea, VStack, useDisclosure } from '@chakra-ui/react'
+import { shallow } from 'zustand/shallow'
 import FocusTrap from 'focus-trap-react'
 import { usePopper } from 'react-popper'
 import { useTranslation } from 'react-i18next'
@@ -24,6 +24,11 @@ import useInitPoolSchema from '../hooks/useInitPoolSchema'
 
 import Decimal from 'decimal.js'
 import dayjs from 'dayjs'
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults'
+import { irysUploader } from '@metaplex-foundation/umi-uploader-irys'
+import { mplToolbox } from '@metaplex-foundation/mpl-toolbox'
+import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters'
+import { useAnchorWallet, useConnection, useWallet } from '@solana/wallet-adapter-react'
 
 export default function Initialize() {
   const { t } = useTranslation()
@@ -31,6 +36,102 @@ export default function Initialize() {
   const [inputMint, setInputMint] = useState<string>(PublicKey.default.toBase58())
   const [outputMint, setOutputMint] = useState<string>(RAYMint.toBase58())
   const [baseToken, quoteToken] = [tokenMap.get(inputMint), tokenMap.get(outputMint)]
+  const [poolImage, setPoolImage] = useState<File|undefined>()
+  const [poolSymbol, setPoolSymbol] = useState<string>('')
+  const [poolUri, setPoolUri] = useState<string>('')
+
+  const [poolName, setPoolName] = useState<string>('')
+  const [poolDescription, setPoolDescription] = useState<string>('')
+  const [twitterHandle, setTwitterHandle] = useState<string>('')
+  const [website, setWebsite] = useState<string>('')
+  const [telegramHandle, setTelegramHandle] = useState<string>('')
+  const [discordHandle, setDiscordHandle] = useState<string>('')
+  const [githubHandle, setGithubHandle] = useState<string>('')
+
+  // Telegram handle input
+  const handleTelegramChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTelegramHandle(e.target.value)
+  }
+
+  // Discord handle input
+  const handleDiscordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDiscordHandle(e.target.value)
+  }
+
+  // GitHub handle input
+  const handleGithubChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setGithubHandle(e.target.value)
+  }
+
+  // Add these new fields to the form, right after the website input
+  const additionalSocialFields = (
+    <>
+      {/* Telegram Handle */}
+      <FormControl>
+        <FormLabel>{t('create_standard_pool.telegram_handle')}</FormLabel>
+        <Input
+          value={telegramHandle}
+          onChange={handleTelegramChange}
+          placeholder="@username or t.me/username"
+        />
+      </FormControl>
+
+      {/* Discord Handle */}
+      <FormControl>
+        <FormLabel>{t('create_standard_pool.discord_handle')}</FormLabel>
+        <Input
+          value={discordHandle}
+          onChange={handleDiscordChange}
+          placeholder="username#0000"
+        />
+      </FormControl>
+
+      {/* GitHub Handle */}
+      <FormControl>
+        <FormLabel>{t('create_standard_pool.github_handle')}</FormLabel>
+        <Input
+          value={githubHandle}
+          onChange={handleGithubChange}
+          placeholder="username"
+        />
+      </FormControl>
+    </>
+  )
+
+  // Twitter handle input
+  const handleTwitterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTwitterHandle(e.target.value)
+  }
+
+  // Website input
+  const handleWebsiteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setWebsite(e.target.value)
+  }
+
+  // Add these new fields to the form, right after the pool description
+  const additionalFields = (
+    <>
+      {/* Twitter Handle */}
+      <FormControl>
+        <FormLabel>{t('create_standard_pool.twitter_handle')}</FormLabel>
+        <Input
+          value={twitterHandle}
+          onChange={handleTwitterChange}
+          placeholder="@username"
+        />
+      </FormControl>
+
+      {/* Website */}
+      <FormControl>
+        <FormLabel>{t('create_standard_pool.website')}</FormLabel>
+        <Input
+          value={website}
+          onChange={handleWebsiteChange}
+          placeholder="https://example.com"
+        />
+      </FormControl>
+    </>
+  )
 
   const [createPoolAct, newCreatedPool] = useLiquidityStore((s) => [s.createPoolAct, s.newCreatedPool], shallow)
 
@@ -76,9 +177,58 @@ export default function Initialize() {
     },
     [inputMint, outputMint]
   )
+  const { connection } = useConnection()
+  const wallet = useWallet()
+  const umi = useMemo(() => {
+    const u = createUmi(connection)
+      .use(irysUploader())
+      .use(mplToolbox());
 
-  const onInitializeClick = () => {
+    if (wallet) {
+      return u.use(walletAdapterIdentity(wallet));
+    }
+    return u;
+  }, [wallet, connection]);
+
+  const onInitializeClick = async() => {
+    if (!poolImage) return
     onLoading()
+    const genericFile = {
+      buffer: new Uint8Array( await poolImage.arrayBuffer() ),
+      fileName: poolImage.name,
+      displayName: poolImage.name,
+      uniqueName: `${Date.now()}-${poolImage.name}`,
+      contentType: poolImage.type,
+      extension: poolImage.name.split('.').pop() || '',
+      tags: []
+    }
+    const firstImageUri = await umi.uploader.upload([genericFile])
+    const r = await fetch(firstImageUri[0])
+    const imageUri = r.url
+
+    const metadata = {
+    name: poolName,
+    symbol: poolSymbol,
+    description: poolDescription,
+    image: imageUri,
+    website,
+    telegram: telegramHandle,
+    discord: discordHandle,
+    github: githubHandle,
+    twitter: twitterHandle,
+
+    extensions: {
+    website,
+    telegram: telegramHandle,
+    discord: discordHandle,
+    github: githubHandle,
+    twitter: twitterHandle,
+
+    }
+    }
+    const firstUri = await umi.uploader.uploadJson(metadata)
+    const response = await fetch(firstUri)
+    const uri = response.url
     createPoolAct({
       pool: {
         mintA: solToWSolToken(baseToken!),
@@ -87,6 +237,9 @@ export default function Initialize() {
       baseAmount: new Decimal(tokenAmount.base).mul(10 ** baseToken!.decimals).toFixed(0),
       quoteAmount: new Decimal(tokenAmount.quote).mul(10 ** quoteToken!.decimals).toFixed(0),
       startTime: startDate,
+      name: poolName,
+      symbol: poolSymbol,
+      uri,
       onError: onTxError,
       onFinally: offLoading
     })
@@ -97,7 +250,7 @@ export default function Initialize() {
       {/* initial liquidity */}
       <Flex direction="column" w="full" align={'flex-start'} gap={4}>
         <Text fontWeight="medium" fontSize="sm">
-          {t('create_standard_pool.initial_liquidity')}
+          For some fuckin reason u need to set these way less than what u want, yolo
         </Text>
         <Flex direction="column" w="full" align={'center'}>
           <TokenInput
@@ -280,6 +433,104 @@ export default function Initialize() {
         <Text color="red" my="-2">
           {tokenAmount.base || tokenAmount.quote ? error : ''}
         </Text>
+        {/* Pool Name */}
+        <FormControl isRequired>
+          <FormLabel>Pool Name</FormLabel>
+          <Input
+            value={poolName}
+            onChange={(e) => setPoolName(e.target.value)}
+          />
+        </FormControl>
+
+        {/* Pool Symbol */}
+        <FormControl isRequired>
+          <FormLabel>Pool Symbol</FormLabel>
+          <Input
+            value={poolSymbol}
+            onChange={(e) => setPoolSymbol(e.target.value)}
+          />
+        </FormControl>
+
+        {/* Pool Description */}
+        <FormControl>
+          <FormLabel>Pool Description</FormLabel>
+          <Textarea
+            value={poolDescription}
+            onChange={(e) => setPoolDescription(e.target.value)}
+            placeholder="Provide a brief description of your pool"
+            resize="vertical"
+          />
+        </FormControl>
+
+        {/* Pool Image */}
+        <FormControl>
+          <FormLabel>Pool Image</FormLabel>
+          <Input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setPoolImage(e.target.files?.[0])}
+          />
+        </FormControl>
+
+        {/* Pool URI */}
+        <FormControl>
+          <FormLabel>Pool URI</FormLabel>
+          <Input
+            value={poolUri}
+            onChange={(e) => setPoolUri(e.target.value)}
+            placeholder="https://example.com/pool-info"
+          />
+        </FormControl>
+
+        {/* Website */}
+        <FormControl>
+          <FormLabel>Website</FormLabel>
+          <Input
+            value={website}
+            onChange={handleWebsiteChange}
+            placeholder="https://example.com"
+          />
+        </FormControl>
+
+        {/* Twitter Handle */}
+        <FormControl>
+          <FormLabel>Twitter Handle</FormLabel>
+          <Input
+            value={twitterHandle}
+            onChange={handleTwitterChange}
+            placeholder="@username"
+          />
+        </FormControl>
+
+        {/* Telegram Handle */}
+        <FormControl>
+          <FormLabel>Telegram Handle</FormLabel>
+          <Input
+            value={telegramHandle}
+            onChange={handleTelegramChange}
+            placeholder="@username or t.me/username"
+          />
+        </FormControl>
+
+        {/* Discord Handle */}
+        <FormControl>
+          <FormLabel>Discord Handle</FormLabel>
+          <Input
+            value={discordHandle}
+            onChange={handleDiscordChange}
+            placeholder="username#0000"
+          />
+        </FormControl>
+
+        {/* GitHub Handle */}
+        <FormControl>
+          <FormLabel>GitHub Handle</FormLabel>
+          <Input
+            value={githubHandle}
+            onChange={handleGithubChange}
+            placeholder="username"
+          />
+        </FormControl>
       </Flex>
       <HStack w="full" spacing={4} mt={2}>
         <Button w="full" isLoading={isLoading} isDisabled={!!error} onClick={onInitializeClick}>

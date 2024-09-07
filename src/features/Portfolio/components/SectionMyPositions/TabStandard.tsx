@@ -2,12 +2,9 @@ import { RAYMint } from '@raydium-io/raydium-sdk-v2'
 import { Flex, Text, Link, Button, Skeleton } from '@chakra-ui/react'
 import { useTranslation } from 'react-i18next'
 import StandardPoolRowItem from './components/Standard/StandardPoolRowItem'
-import { FormattedFarmInfoV6 } from '@/hooks/farm/type'
-import { FarmPositionInfo } from '@/hooks/portfolio/farm/useFarmPositions'
 import useFetchAccLpMint from '@/hooks/token/useFetchAccLpMint'
 import useFetchPoolByLpMint from '@/hooks/pool/useFetchPoolByLpMint'
 import { colors } from '@/theme/cssVariables'
-import { FarmBalanceInfo } from '@/hooks/farm/type'
 
 export default function MyPositionTabStandard({
   lpBasedData,
@@ -17,10 +14,10 @@ export default function MyPositionTabStandard({
   isLoading
 }: {
   isLoading: boolean
-  allFarmBalances: FarmBalanceInfo[]
+  allFarmBalances: any[]
   refreshTag: number
-  lpBasedData: Map<string, FarmPositionInfo>
-  stakedFarmMap: Map<string, FormattedFarmInfoV6>
+  lpBasedData: Map<string, any>
+  stakedFarmMap: Map<string, any>
 }) {
   const { t } = useTranslation()
   const { noneZeroLpMintList } = useFetchAccLpMint({})

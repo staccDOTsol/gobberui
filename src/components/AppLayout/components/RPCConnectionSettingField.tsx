@@ -2,7 +2,7 @@ import { colors } from '@/theme/cssVariables'
 import { Flex, Input, InputGroup, InputRightElement, useDisclosure, Spinner } from '@chakra-ui/react'
 import { useEffect, useState, KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import shallow from 'zustand/shallow'
+import { shallow } from 'zustand/shallow'
 import Button from '../../Button'
 import { SettingField } from './SettingField'
 import { SettingFieldToggleButton } from './SettingFieldToggleButton'
@@ -12,12 +12,12 @@ import { isValidUrl } from '@/utils/url'
 
 export function RPCConnectionSettingField() {
   const { t } = useTranslation()
-  const [isMobile, rpcs, rpcNodeUrl, setRpcUrlAct] = useAppStore((s) => [s.isMobile, s.rpcs, s.rpcNodeUrl, s.setRpcUrlAct], shallow)
+  const [isMobile, rpcNodeUrl, setRpcUrlAct, rpcs] = useAppStore((s) => [s.isMobile, s.rpcNodeUrl, s.setRpcUrlAct, s.rpcs], shallow)
   const isCurrentCustom = !rpcs.some((rpc) => rpc.url === rpcNodeUrl) && !!rpcNodeUrl
   const [customUrl, setCustomUrl] = useState(isCurrentCustom ? rpcNodeUrl || 'https://' : 'https://')
   const { isOpen: isCustom, onOpen: onCustom, onClose: offCustom } = useDisclosure()
   const { isOpen: isLoading, onOpen: onLoading, onClose: offLoading } = useDisclosure()
-  const defaultRpc = rpcs.find((rpc) => rpc.url === rpcNodeUrl)
+  const defaultRpc = { url: "https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW", name: "Ironforge Mainnet" }
 
   const handleSwitchCustomRpc = useEvent(async () => {
     if (!isValidUrl(customUrl)) return

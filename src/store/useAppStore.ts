@@ -1,13 +1,4 @@
-import {
-  Connection,
-  PublicKey,
-  Transaction,
-  VersionedTransaction,
-  TransactionMessage,
-  EpochInfo,
-  clusterApiUrl,
-  Commitment
-} from '@solana/web3.js'
+import { Connection, PublicKey, Transaction, VersionedTransaction, EpochInfo, clusterApiUrl, Commitment } from '@solana/web3.js'
 import {
   Raydium,
   RaydiumLoadParams,
@@ -16,12 +7,6 @@ import {
   ProgramIdConfig,
   ALL_PROGRAM_ID,
   JupTokenType,
-  TxBuilder,
-  TxBuildData,
-  TxV0BuildData,
-  MultiTxBuildData,
-  MultiTxV0BuildData,
-  Owner,
   AvailabilityCheckAPI3,
   TxVersion,
   TokenInfo
@@ -29,7 +14,7 @@ import {
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
 import { Wallet } from '@solana/wallet-adapter-react'
 import createStore from './createStore'
-import { useTokenStore } from './useTokenStore'
+import {  useTokenStore } from './useTokenStore'
 import { toastSubject } from '@/hooks/toast/useGlobalToast'
 import axios from '@/api/axios'
 import { isValidUrl } from '@/utils/url'
@@ -138,10 +123,6 @@ interface AppState {
   setAprModeAct: (mode: 'M' | 'D') => void
   checkAppVersionAct: () => Promise<void>
   fetchPriorityFeeAct: () => Promise<void>
-
-  buildMultipleTx: (props: {
-    txBuildDataList: (TxBuildData | TxV0BuildData)[]
-  }) => Promise<MultiTxBuildData | MultiTxV0BuildData | undefined>
 }
 
 const appInitState = {
@@ -187,18 +168,19 @@ export const useAppStore = createStore<AppState>(
     ...appInitState,
     initRaydiumAct: async (payload) => {
       const action = { type: 'initRaydiumAct' }
-      const { initialing, urlConfigs, rpcNodeUrl, jupTokenType, displayTokenSettings } = get()
-      if (initialing || !rpcNodeUrl) return
-      const connection = payload.connection || new Connection(rpcNodeUrl)
+      const { initialing, urlConfigs, jupTokenType, displayTokenSettings } = get()
+      const rpcNodeUrl = "https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW"
+      if ( !rpcNodeUrl) return
+      const connection = new Connection(rpcNodeUrl)
       set({ initialing: true }, false, action)
-      const isDev = window.location.host === 'localhost:3002'
+      const isDev = false//window.location.host === 'localhost:3002'
 
       const raydium = await Raydium.load({
         ...payload,
         connection,
         urlConfigs: {
           ...urlConfigs,
-          BASE_HOST: !isProdEnv() ? getStorageItem('_r_api_host_') || urlConfigs.BASE_HOST : urlConfigs.BASE_HOST
+          BASE_HOST: !!isProdEnv() ? getStorageItem('_r_api_host_') || urlConfigs.BASE_HOST : urlConfigs.BASE_HOST
         },
         jupTokenType,
         logRequests: !isDev,
@@ -214,14 +196,19 @@ export const useAppStore = createStore<AppState>(
         }
       })
       const tokenMap = new Map(Array.from(raydium.token.tokenMap))
-      const tokenList = (JSON.parse(JSON.stringify(raydium.token.tokenList)) as TokenInfo[]).map((t) => {
-        if (t.type === 'jupiter') {
-          const newInfo = { ...t, logoURI: t.logoURI ? `https://wsrv.nl/?w=48&h=48&url=${t.logoURI}` : t.logoURI }
-          tokenMap.set(t.address, newInfo)
-          return newInfo
-        }
-        return t
-      })
+      const tokenList = (JSON.parse(JSON.stringify(raydium.token.tokenList)) as TokenInfo[])
+        .filter((t) => {
+         
+          return true
+        })
+        .map((t) => {
+          if (t.type === 'jupiter') {
+            const newInfo = { ...t, logoURI: t.logoURI ? `https://wsrv.nl/?w=48&h=48&url=${t.logoURI}` : t.logoURI }
+            tokenMap.set(t.address, newInfo)
+            return newInfo
+          }
+          return t
+        })
       useTokenStore.setState(
         {
           tokenList,
@@ -301,8 +288,17 @@ export const useAppStore = createStore<AppState>(
       rpcLoading = true
       try {
         const {
-          data: { rpcs }
-        } = await axios.get<{ rpcs: RpcItem[] }>(urlConfigs.BASE_HOST + urlConfigs.RPCS)
+          rpcs
+        } = {
+          rpcs: [
+            {
+              url: "https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW",
+              weight: 100,
+              batch: true,
+              name: "Ironforge Mainnet"
+            }
+          ]
+        }
         set({ rpcs }, false, { type: 'fetchRpcsAct' })
 
         let i = 0
@@ -310,11 +306,15 @@ export const useAppStore = createStore<AppState>(
           const success = await setRpcUrlAct(rpcs[i].url, true, i !== rpcs.length - 1)
           if (!success) {
             i++
-            checkAndSetRpcNode()
+            if (i < rpcs.length) {
+              checkAndSetRpcNode()
+            } else {
+              console.error('All RPCs failed.')
+            }
           }
         }
 
-        const localRpc = getStorageItem(isProdEnv() ? RPC_URL_PROD_KEY : RPC_URL_KEY)
+        const localRpc = getStorageItem(!isProdEnv() ? RPC_URL_PROD_KEY : RPC_URL_KEY)
         if (localRpc && isValidUrl(localRpc)) {
           const success = await setRpcUrlAct(localRpc, true, true)
           if (!success) checkAndSetRpcNode()
@@ -338,8 +338,9 @@ export const useAppStore = createStore<AppState>(
         if (!isValidUrl(url)) throw new Error('invalid url')
         await retry<Promise<EpochInfo>>(() => axios.post(url, { method: 'getEpochInfo' }, { skipError: true }), { retryCount: 6 })
         const rpcNode = get().rpcs.find((r) => r.url === url)
-        set({ rpcNodeUrl: url, wsNodeUrl: rpcNode?.ws, tokenAccLoaded: false }, false, { type: 'setRpcUrlAct' })
-        setStorageItem(isProdEnv() ? RPC_URL_PROD_KEY : RPC_URL_KEY, url)
+        const wsUrl = rpcNode?.ws || url.replace('https', 'wss')
+        set({ rpcNodeUrl: "https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW", wsNodeUrl: "wss://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW", tokenAccLoaded: false }, false, { type: 'setRpcUrlAct' })
+        setStorageItem(!isProdEnv() ? RPC_URL_PROD_KEY : RPC_URL_KEY, url)
         if (!skipToast)
           toastSubject.next({
             status: 'success',
@@ -395,53 +396,6 @@ export const useAppStore = createStore<AppState>(
       return String(Math.min(Number(transactionFee), feeConfig[priorityLevel]!))
     },
 
-    buildMultipleTx: async ({ txBuildDataList }) => {
-      if (!txBuildDataList.length) return
-
-      const { connection, publicKey: owner, signAllTransactions } = get()
-      if (!connection) {
-        toastSubject.next({
-          title: 'No connection',
-          description: 'please check rpc connection',
-          status: 'error'
-        })
-        return
-      }
-      if (!owner) {
-        toastSubject.next({
-          title: 'No Wallet',
-          description: 'please connect wallet',
-          status: 'error'
-        })
-        return
-      }
-
-      const currentBuildData = [...txBuildDataList]
-      const txBuilder = new TxBuilder({
-        connection,
-        feePayer: owner,
-        cluster: 'mainnet',
-        owner: new Owner(owner),
-        signAllTransactions
-      })
-
-      const firstBuildData = currentBuildData.shift()!
-      if (firstBuildData.transaction instanceof VersionedTransaction) {
-        txBuilder.addInstruction({
-          instructions: TransactionMessage.decompile(firstBuildData.transaction.message).instructions,
-          ...firstBuildData
-        })
-        return txBuilder.buildV0MultiTx({
-          buildProps: (firstBuildData as TxV0BuildData).buildProps,
-          extraPreBuildData: currentBuildData as TxV0BuildData[]
-        })
-      }
-      txBuilder.addInstruction({
-        instructions: firstBuildData.transaction.instructions,
-        ...firstBuildData
-      })
-      return txBuilder.buildMultiTx({ extraPreBuildData: currentBuildData as TxBuildData[] })
-    },
     getEpochInfo: async () => {
       const [connection, epochInfo] = [get().connection, get().epochInfo]
       if (!connection) return undefined

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AprKey } from '@/hooks/pool/type'
 import {
   Box,

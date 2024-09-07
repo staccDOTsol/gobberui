@@ -1,8 +1,7 @@
 import dynamic from 'next/dynamic'
-const CreateFarm = dynamic(() => import('@/features/Farm/Create'))
 
 function CreateFarmPage() {
-  return <CreateFarm />
+  return (<></>)
 }
 
 export default CreateFarmPage

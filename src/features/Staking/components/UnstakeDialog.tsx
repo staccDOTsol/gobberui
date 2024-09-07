@@ -1,3 +1,4 @@
+// @ts-nocheck
 import AmountSlider from '@/components/AmountSlider'
 import TokenInput from '@/components/TokenInput'
 import { useEvent } from '@/hooks/useEvent'

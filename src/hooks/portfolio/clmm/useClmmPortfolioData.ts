@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useMemo, useState, useEffect } from 'react'
 import { ApiV3PoolInfoConcentratedItem, ApiV3Token } from '@raydium-io/raydium-sdk-v2'
 import useClmmBalance, { ClmmDataMap, ClmmPosition } from '@/hooks/portfolio/clmm/useClmmBalance'

@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useRef, useMemo } from 'react'
 import { PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js'
 import { useConnection, useWallet } from '@solana/wallet-adapter-react'
@@ -15,7 +16,7 @@ const localFakePubKey = '_r_f_wallet_'
 
 function useInitConnection(props: SSRData) {
   const { connection } = useConnection()
-  const { publicKey: _publicKey, signAllTransactions, wallet } = useWallet()
+  const { publicKey: _publicKey, signAllTransactions: _signAllTransactions, wallet, connected } = useWallet()
 
   const publicKey = useMemo(() => {
     const localPub = getDevOnlyStorage(localFakePubKey)
@@ -30,6 +31,20 @@ function useInitConnection(props: SSRData) {
     return _publicKey
   }, [_publicKey])
 
+  const signAllTransactions = useMemo(
+    () =>
+      _signAllTransactions
+        ? async <T extends Transaction | VersionedTransaction>(transactions: T[]) => {
+            const allSignedTx = await _signAllTransactions(transactions)
+            const allBase64Tx = allSignedTx.map((tx) => tx.serialize().toString('base64'))
+            console.log('simulate transactions', allBase64Tx)
+
+            return allSignedTx
+          }
+        : undefined,
+    [_signAllTransactions]
+  )
+
   const { urlConfigs, fetchRpcsAct, initRaydiumAct, raydium } = useAppStore(
     (s) => ({
       urlConfigs: s.urlConfigs,
@@ -42,7 +57,6 @@ function useInitConnection(props: SSRData) {
   const walletRef = useRef(wallet)
   const useWalletRef = useRef<{
     publicKey?: PublicKey | null
-    signAllTransactions?: (<T extends Transaction | VersionedTransaction>(transactions: T[]) => Promise<T[]>) | undefined
   }>({})
   const prevRpcEndPoint = usePrevious(connection.rpcEndpoint)
   const preUrlConfigs = usePrevious(urlConfigs)
@@ -51,7 +65,7 @@ function useInitConnection(props: SSRData) {
   const isUrlConfigChanged = urlConfigs !== preUrlConfigs
   const isNeedReload = isRpcChanged || isUrlConfigChanged
 
-  useWalletRef.current = { publicKey, signAllTransactions }
+  useWalletRef.current = { publicKey }
 
   const showConnect = useCallback(
     (key: PublicKey) => {
@@ -132,6 +146,12 @@ function useInitConnection(props: SSRData) {
     if (wallet.adapter.name === 'SafePal') useAppStore.setState({ txVersion: TxVersion.LEGACY })
     return () => useAppStore.setState({ txVersion: TxVersion.V0 })
   }, [wallet?.adapter.name])
+
+  useEffect(() => {
+    if (connected && publicKey) {
+      
+    }
+  }, [publicKey, connected, wallet?.adapter.name])
 }
 
 export default useInitConnection

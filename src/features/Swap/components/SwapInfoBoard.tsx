@@ -99,10 +99,10 @@ export function SwapInfoBoard({
         <HStack gap={4} py={1} justifyContent="space-between">
           <ItemLabel name={t('swap.info_estimated_fees')} tooltip={t('swap.info_estimated_fees_tooltip')} />
           <Text align="end" fontSize="xs" color={colors.textPrimary}>
-            {computedSwapResult?.routePlan.map((route) => (
-              <FeeItem key={route.poolId} route={route} />
-            ))}
-          </Text>
+    {computedSwapResult?.routePlan.map((route, index) => (
+      <FeeItem key={`${route.poolId}-${index}`} route={route} />
+    ))}
+  </Text>
         </HStack>
       </Collapse>
 
@@ -270,7 +270,7 @@ function RoutingValue({ routePlan }: { routePlan: ApiSwapV1OutSuccess['data']['r
   return (
     <HStack spacing={0.5} minH="32px">
       {routePlan.map(({ inputMint, outputMint, feeRate, poolId }, idx) => (
-        <Fragment key={inputMint}>
+        <Fragment key={`${inputMint}-${outputMint}-${idx}`}>
           <Tooltip label={<AddressChip address={inputMint} textProps={{ fontSize: 'xs' }} canExternalLink />}>
             <TokenAvatar tokenMint={inputMint} size="sm" />
           </Tooltip>

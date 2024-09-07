@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useAppStore } from '@/store/useAppStore'
-import shallow from 'zustand/shallow'
+import { shallow } from 'zustand/shallow'
 
 export default function useRefreshEpochInfo() {
   const [getEpochInfo, epochInfo, connection] = useAppStore((s) => [s.getEpochInfo, s.epochInfo, s.connection], shallow)

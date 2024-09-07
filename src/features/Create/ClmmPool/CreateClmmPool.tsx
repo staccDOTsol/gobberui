@@ -2,7 +2,7 @@ import { Box, Flex, Grid, GridItem, HStack, Link, Text, useDisclosure } from '@c
 import { ApiClmmConfigInfo, ApiV3Token, solToWSol } from '@raydium-io/raydium-sdk-v2'
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
-import shallow from 'zustand/shallow'
+import { shallow } from 'zustand/shallow'
 
 import PanelCard from '@/components/PanelCard'
 import { StepsRef } from '@/components/Steps'

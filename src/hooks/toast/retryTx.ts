@@ -1,4 +1,4 @@
-import { VersionedTransaction, Transaction } from '@solana/web3.js'
+import { VersionedTransaction, Transaction, Connection } from '@solana/web3.js'
 import { retry, idToIntervalRecord, cancelRetry } from '@/utils/common'
 import { useAppStore } from '@/store'
 import axios from '@/api/axios'
@@ -12,28 +12,27 @@ const retryRecord = new Map<
 >()
 
 export default function retryTx({ tx, id }: { tx: Transaction | VersionedTransaction; id: string }) {
-  const { connection, urlConfigs } = useAppStore.getState()
+  const {  urlConfigs } = useAppStore.getState()
   if (retryRecord.has(id)) return
 
   let serialized = tx.serialize({ requireAllSignatures: false, verifySignatures: false })
   if (tx instanceof VersionedTransaction) serialized = toBuffer(serialized)
   const base64 = serialized.toString('base64')
-
-  const sendApi = () => {
+const connection = new Connection("https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW")
+  const sendApi = async() => {
     try {
-      axios
-        .post(
-          `${urlConfigs.SERVICE_BASE_HOST}${urlConfigs.SEND_TRANSACTION}`,
-          {
-            data: [base64]
-          },
-          { skipError: true }
-        )
-        .catch((e) => {
-          console.error('send tx to be error', e.message)
-        })
-    } catch {
-      console.error('send tx to be error')
+      const { blockhash } = await connection.getLatestBlockhash();
+      const txMessage = tx instanceof Transaction ? tx : tx.message;
+      await connection.sendRawTransaction(
+        Buffer.from(txMessage.serialize()),
+        {
+          skipPreflight: true,
+          maxRetries: 3,
+          preflightCommitment: 'confirmed',
+        }
+      );
+    } catch (error) {
+      console.error('Failed to send transaction:', error);
     }
   }
   sendApi()

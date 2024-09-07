@@ -211,13 +211,17 @@ export default function SectionMyPositions() {
         ) : isFocusStandardTab ? (
           <MyPositionTabStandard
             isLoading={isFarmLoading}
-            allFarmBalances={allFarmBalances}
-            lpBasedData={farmLpBasedData}
-            stakedFarmMap={stakedFarmMap}
+            allFarmBalances={[]}
+            lpBasedData={new Map}
+            stakedFarmMap={new Map(Object.entries(stakedFarmMap))}
             refreshTag={refreshTag}
           />
         ) : isFocusStake ? (
-          <MyPositionTabStaked allFarmBalances={allFarmBalances} farmLpBasedData={farmLpBasedData} refreshTag={refreshTag} />
+          <MyPositionTabStaked 
+            allFarmBalances={ []} 
+            farmLpBasedData={new Map} 
+            refreshTag={refreshTag} 
+          />
         ) : null
       ) : (
         <SimpleGrid {...panelCard} placeItems={'center'} bg={colors.backgroundLight} borderRadius="12px" py={12}>

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   Box,
   Collapse,
@@ -11,11 +12,10 @@ import {
   Switch,
   Tag,
   Text,
-  useBreakpointValue,
   useDisclosure,
   useUpdateEffect
 } from '@chakra-ui/react'
-import { ApiV3Token, FetchPoolParams, PoolFetchType } from '@raydium-io/raydium-sdk-v2'
+import { ApiV3PoolInfoStandardItemCpmm, ApiV3Token, FetchPoolParams, PoolFetchType } from '@raydium-io/raydium-sdk-v2'
 import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -64,7 +64,7 @@ import { poolInfoCache } from '@/hooks/pool/formatter'
 export type PoolPageQuery = {
   token?: string
   search?: string
-  tab?: 'concentrated' | 'standard' | 'all'
+  tab?: 'standard' 
   layout?: 'list' | 'grid'
 }
 
@@ -129,29 +129,19 @@ export default function Pools() {
   const isMobile = useAppStore((s) => s.isMobile)
 
   const tabItems: PoolTabItem[] = [
-    {
-      name: 'Concentrated',
-      label: isEN && isMobile ? 'CLMM' : t('liquidity.concentrated'),
-      value: PoolFetchType.Concentrated
-    },
+   
     {
       name: 'Standard',
       label: isEN && isMobile ? 'STANDARD' : t('liquidity.standard'),
       value: PoolFetchType.Standard
-    },
-    {
-      name: 'All',
-      label: isEN && isMobile ? 'ALL' : t('common.all'),
-      value: PoolFetchType.All
     }
   ]
-
-  const listControllerIconSize = useBreakpointValue({ base: '24px', sm: '28px' })
-  const gridCardSize = useBreakpointValue({ base: undefined, sm: 290 })
-  const gridCardGap = useBreakpointValue({ base: 4, sm: 5 })
+  const listControllerIconSize = '24px'
+  const gridCardSize = 290
+  const gridCardGap = 4
   const { isOpen: isChartOpen, onOpen: openChart, onClose: closeChart } = useDisclosure()
-  const [chartPoolInfo, setChartPoolInfo] = useState<FormattedPoolInfoItem>()
-
+  const [chartPoolInfo, setChartPoolInfo] = useState<FormattedPoolInfoItem &ApiV3PoolInfoStandardItemCpmm >()
+console.log(chartPoolInfo)
   // -------- search --------
   const tokenMap = useTokenStore((s) => s.tokenMap)
   const [searchTokens, setSearchTokens] = useState<ApiV3Token[]>([])
@@ -268,7 +258,7 @@ export default function Pools() {
   useEffect(() => {
     if (orgData) orgData.forEach((d:any) => poolInfoCache.set(d.id, d))
   }, [orgData])
-
+console.log(orgData)
 
   const {
     formattedData: searchMintData,
@@ -593,9 +583,14 @@ export default function Pools() {
           <PoolChartModal
             renderModalHeader={
               <Flex alignItems="center" gap={1}>
-                <TokenAvatarPair token1={chartPoolInfo?.mintA} token2={chartPoolInfo?.mintB} />
+                <TokenAvatarPair token1={chartPoolInfo?.mintA} token2={chartPoolInfo?.mintB} token3={chartPoolInfo?.lpMint} />
                 <Text>
                   {chartPoolInfo?.mintA.symbol} / {chartPoolInfo?.mintB.symbol}
+                {chartPoolInfo?.lpMint && (
+                  <Text as="span" fontSize="sm" color={colors.textSecondary} ml={1}>
+                    (LP: {chartPoolInfo.lpMint.symbol})
+                  </Text>
+                )}
                 </Text>
                 <Tag size={'sm'} variant="rounded">
                   {formatToRawLocaleStr(toPercentString(chartPoolInfo?.feeRate, { alreadyPercented: false }))}

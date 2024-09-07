@@ -9,9 +9,11 @@ import {
   TokenAmount,
   Percent,
   getCpmmPdaAmmConfigId,
-  CpmmConfigInfoLayout
+  CpmmConfigInfoLayout,
+  getPdaVault,
+  getPdaPoolAuthority
 } from '@raydium-io/raydium-sdk-v2'
-import { PublicKey } from '@solana/web3.js'
+import { Connection, PublicKey } from '@solana/web3.js'
 import createStore from './createStore'
 import { useAppStore } from './useAppStore'
 import { toastSubject } from '@/hooks/toast/useGlobalToast'
@@ -81,6 +83,9 @@ interface LiquidityStore {
       baseAmount: string
       quoteAmount: string
       startTime?: Date
+    name: string
+    symbol: string
+    uri: string
     } & TxCallbackProps
   ) => Promise<string>
 
@@ -151,6 +156,19 @@ export const useLiquidityStore = createStore<LiquidityStore>(
       })
       const { execute } = await raydium.cpmm.addLiquidity({
         ...params,
+        poolKeys: {
+          mintLp: params.poolInfo.lpMint,
+          programId: new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj").toBase58(),
+          mintA: params.poolInfo.mintA,
+          mintB: params.poolInfo.mintB,
+          id: params.poolInfo.id,
+          authority: getPdaPoolAuthority(new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj")).publicKey.toBase58(),
+          config: params.poolInfo.config,
+          vault: {
+            A: getPdaVault(new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj"), new PublicKey(params.poolInfo.id), new PublicKey(params.poolInfo.mintA.address)).publicKey.toBase58(),
+            B: getPdaVault(new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj"), new PublicKey(params.poolInfo.id), new PublicKey(params.poolInfo.mintB.address)).publicKey.toBase58()
+          },
+        },
         inputAmount: new BN(new Decimal(params.inputAmount).mul(10 ** params.poolInfo[baseIn ? 'mintA' : 'mintB'].decimals).toFixed(0)),
         slippage: percentSlippage,
         computeResult: {
@@ -292,12 +310,41 @@ export const useLiquidityStore = createStore<LiquidityStore>(
       if (!raydium) return ''
       const { poolInfo, lpAmount, amountA, amountB } = params
       const computeBudgetConfig = await getComputeBudgetConfig()
+      var pi = ((await new Connection("https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW").getAccountInfo(new PublicKey(poolInfo.id)))?.data as Buffer);
+      const configInfo = await new Connection("https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW").getAccountInfo(new PublicKey(pi.slice(8, 40)));
+      const config = CpmmConfigInfoLayout.decode(configInfo?.data as Buffer);
+      const normalizedConfig = {
+        id: new PublicKey(pi.slice(8, 40)).toString(),
+        protocolFeeRate: 12000,
+        tradeFeeRate: 2500,
+        fundFeeRate: 2500,
+        fundOwner: config.fundOwner,
+        disableCreatePool: config.disableCreatePool,
+        createPoolFee: config.createPoolFee.toString(),
+        protocolOwner: config.protocolOwner,
+        bump: config.bump,
+        index: config.index
+      }
       const { execute } = await raydium.cpmm.withdrawLiquidity({
         poolInfo,
         lpAmount: new BN(lpAmount),
         slippage: new Percent(get().slippage * 10000, 10000),
         txVersion,
-        computeBudgetConfig
+        computeBudgetConfig,
+        poolKeys: {
+          ...poolInfo,
+          mintLp: poolInfo.lpMint,
+          programId: new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj").toBase58(),
+          mintA: poolInfo.mintA,
+          mintB: poolInfo.mintB,
+          id: poolInfo.id,
+          authority: getPdaPoolAuthority(new PublicKey(new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj"))).publicKey.toBase58(),
+          config: normalizedConfig,
+          vault: {
+            A: getPdaVault(new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj"), new PublicKey(poolInfo.id), new PublicKey(poolInfo.mintA.address)).publicKey.toBase58(),
+            B: getPdaVault(new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj"), new PublicKey(poolInfo.id), new PublicKey(poolInfo.mintB.address)).publicKey.toBase58()
+          },
+        }
       })
 
       const meta = getTxMeta({
@@ -324,7 +371,7 @@ export const useLiquidityStore = createStore<LiquidityStore>(
         .finally(onFinally)
     },
 
-    createPoolAct: async ({ pool, baseAmount, quoteAmount, startTime, onSent, onError, onFinally, onConfirmed }) => {
+    createPoolAct: async ({ pool, baseAmount, quoteAmount, startTime, name, symbol, uri, onSent, onError, onFinally, onConfirmed }) => {
       const { raydium, programIdConfig, txVersion } = useAppStore.getState()
       if (!raydium) return ''
       const computeBudgetConfig = await getComputeBudgetConfig()
@@ -342,7 +389,10 @@ export const useLiquidityStore = createStore<LiquidityStore>(
         },
         associatedOnly: false,
         txVersion,
-        computeBudgetConfig
+        computeBudgetConfig,
+        name,
+        symbol,
+        uri
       })
 
       const meta = getTxMeta({

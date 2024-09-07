@@ -6,12 +6,11 @@ import TokenAvatar from '@/components/TokenAvatar'
 import TokenAvatarPair from '@/components/TokenAvatarPair'
 import CircleCheckFill from '@/icons/misc/CircleCheckFill'
 import { colors } from '@/theme/cssVariables'
-import { FarmType, FormattedFarmInfo } from '@/hooks/farm/type'
 import { formatCurrency } from '@/utils/numberish/formatter'
 import { useTranslation } from 'react-i18next'
 
 type SelectFarmListItemProps = {
-  farm: FormattedFarmInfo
+  farm: any
   currentSelectedId?: string
 }
 
@@ -36,15 +35,7 @@ export default function SelectFarmListItem({ farm, currentSelectedId }: SelectFa
             </Text>
           </HStack>
         </Box>
-        <Box>
-          <Badge variant="crooked">
-            {farm.type === FarmType.Ecosystem
-              ? t('badge.ecosystem')
-              : farm.type === FarmType.Fusion
-              ? t('badge.fusion')
-              : t('badge.raydium')}
-          </Badge>
-        </Box>
+       
       </Box>
       <Box>
         <Text fontSize="sm" color={colors.textSecondary} opacity={0.6}>
@@ -59,7 +50,7 @@ export default function SelectFarmListItem({ farm, currentSelectedId }: SelectFa
           Rewards
         </Text>
         <HStack spacing={-1}>
-          {farm.rewardInfos?.map((reward, idx) => (
+          {farm.rewardInfos?.map((reward: any, idx: any) => (
             <TokenAvatar size="xs" key={`reward-token-${idx}`} token={reward.mint} />
           ))}
         </HStack>

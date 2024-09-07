@@ -15,6 +15,9 @@ import { LiquidityActionModeType, tabValueModeMapping } from '../utils'
 import BalanceInfo from './components/BalanceInfo'
 import RemoveLiquidity from './components/RemoveLiquidity'
 import UnStakeLiquidity from './components/UnStakeLiquidity'
+import { FormattedPoolInfoStandardItemCpmm } from '@/hooks/pool/type'
+import Decimal from 'decimal.js-light'
+import useTokenPrice from '@/hooks/token/useTokenPrice'
 
 export type DecreaseTabOptionType = {
   value: 'Unstake Liquidity' | 'Remove Liquidity'
@@ -43,11 +46,21 @@ export default function Decrease() {
 
   const [tabValue, setTabValue] = useState<DecreaseTabOptionType['value'] | undefined>(undefined)
   const [stakedLiquidity, setStakedLiquidity] = useState('0')
-
-  const { formattedData, mutate } = useFetchPoolById<ApiV3PoolInfoStandardItem>({
-    idList: [poolId]
-  })
-  const poolInfo = formattedData?.[0]
+  const [pool, setPool] = useState<any | undefined>(undefined);
+  const toawaot = useFetchPoolById({shouldFetch: true, idList: [poolId]});
+  useEffect(() => {
+    const fetchPools = async () => {
+      const pools = await toawaot;
+      if (pools && pools.formattedData && pools.formattedData.length > 0) {
+        // @ts-ignore
+        setPool(pools.formattedData[0]);
+      }
+    };
+    fetchPools();
+  }, [toawaot, poolId]);
+  // @ts-ignore
+  const poolInfo:any = pool
+ 
   const isCpmm = poolInfo && poolInfo.programId === CREATE_CPMM_POOL_PROGRAM.toBase58()
   const { data: rpcAmmPoolData, mutate: rpcAmmMutate } = useFetchRpcPoolData({
     shouldFetch: !isCpmm,
@@ -71,9 +84,28 @@ export default function Decrease() {
           lpDecimals: isCpmm ? rpcCpmmPoolData!.lpDecimals : rpcAmmPoolData!.lpDecimals
         }
       : undefined
-
+      const prices=  useTokenPrice(
+        {mintList: [poolInfo?.mintA.address, poolInfo?.mintB.address]})
   const handleStakedChange = useCallback((val: string) => setStakedLiquidity(val), [])
+if (rpcPoolData && poolInfo?.mintA) {
+  if (pool?.mintA.symbol && pool?.mintB?.symbol) {
+    poolInfo  .poolName = `${pool.mintA.symbol}-${pool.mintB.symbol}`;
+  } else {
+    console.warn('Missing symbol information for pool:', poolInfo);
+    poolInfo.poolName = 'Unknown Pool';
+  }
+poolInfo.lpMint = poolInfo?.lpMint || { address: '', decimals: 0 }
 
+  const baseReserve = new Decimal(rpcPoolData.baseReserve.toString());
+  const quoteReserve = new Decimal(rpcPoolData.quoteReserve.toString());
+  const lpSupply = new Decimal(rpcPoolData.lpSupply.toString());
+
+  const baseValue = baseReserve.mul(prices.data[poolInfo.mintA.address]?.value || 0);
+  const quoteValue = quoteReserve.mul(prices.data[poolInfo.mintB.address]?.value || 0);
+
+  poolInfo.lpPrice = baseValue.add(quoteValue).div(lpSupply).toNumber();
+  
+} 
   useEffect(() => {
     setTabValue(queryMode === 'remove' ? 'Remove Liquidity' : 'Unstake Liquidity')
   }, [queryMode])
@@ -84,11 +116,10 @@ export default function Decrease() {
   })
 
   const handleRefresh = useEvent(() => {
-    mutate()
     rpcMutate()
     fetchTokenAccountAct({})
   })
-
+if (!poolInfo || !poolInfo.poolName) return
   return (
     <>
       <Grid templateColumns={['unset', '1fr 2fr 1fr']} gap={'clamp(16px, 1.5vw, 64px)'} mt={8}>
@@ -121,16 +152,7 @@ export default function Decrease() {
                 }
               />
             </Box>
-            {queryMode === 'unstake' ? (
-              <UnStakeLiquidity
-                poolInfo={poolInfo}
-                lpPrice={poolInfo?.lpPrice || 0}
-                onStakedChange={handleStakedChange}
-                defaultFarm={farm_id}
-              />
-            ) : (
               <RemoveLiquidity poolInfo={poolInfo} rpcPoolData={rpcPoolData} onRefresh={handleRefresh} />
-            )}
           </VStack>
         </GridItem>
         {/* right */}

@@ -1,7 +1,7 @@
 import Staking from '@/features/Staking'
 
 function StakingPage() {
-  return <Staking />
+  return <></>
 }
 
 export default StakingPage

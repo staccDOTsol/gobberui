@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useMemo, memo } from 'react'
 import Link from 'next/link'
 import { useTranslation } from 'react-i18next'

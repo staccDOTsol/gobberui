@@ -16,7 +16,7 @@ import {
   HStack
 } from '@chakra-ui/react'
 import { solToWSol } from '@raydium-io/raydium-sdk-v2'
-import shallow from 'zustand/shallow'
+import { shallow } from 'zustand/shallow'
 
 import { FormattedPoolInfoConcentratedItem } from '@/hooks/pool/type'
 import TokenAvatarPair from '@/components/TokenAvatarPair'

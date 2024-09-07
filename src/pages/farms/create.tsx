@@ -1,7 +1,6 @@
-import CreateFarm from '@/features/Farm/Create'
 
 function FarmCreatePage() {
-  return <CreateFarm />
+  return (<></>)
 }
 
 export default FarmCreatePage

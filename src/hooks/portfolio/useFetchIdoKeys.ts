@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { IdoKeysData } from '@raydium-io/raydium-sdk-v2'
 import useSWR from 'swr'
-import shallow from 'zustand/shallow'
+import { shallow } from 'zustand/shallow'
 import axios from '@/api/axios'
 import { useAppStore } from '@/store'
 import { isValidPublicKey } from '@/utils/publicKey'

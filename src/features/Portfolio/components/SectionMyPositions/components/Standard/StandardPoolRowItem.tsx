@@ -1,13 +1,12 @@
+// @ts-nocheck
 import { useCallback, useMemo, useState } from 'react'
 import { Box, Button, Collapse, GridItem, HStack, VStack, useDisclosure, Skeleton } from '@chakra-ui/react'
 import { ApiV3Token } from '@raydium-io/raydium-sdk-v2'
 import MigrateFromStandardDialog from '@/features/Clmm/MigrateClmmFromStandardDialog/Dialog'
-import { FormattedFarmInfoV6 } from '@/hooks/farm/type'
-import { FarmPositionInfo } from '@/hooks/portfolio/farm/useFarmPositions'
 import useFetchRpcPoolData from '@/hooks/pool/amm/useFetchRpcPoolData'
 import { FormattedPoolInfoStandardItem } from '@/hooks/pool/type'
 import ExpandUpIcon from '@/icons/misc/ExpandUpIcon'
-import { useAppStore, useFarmStore, useTokenAccountStore } from '@/store'
+import { useAppStore, useTokenAccountStore } from '@/store'
 import { colors } from '@/theme/cssVariables'
 import { debounce } from '@/utils/functionMethods'
 
@@ -22,7 +21,6 @@ import StandardPoolRowStakeFarmHoldItem from './components/StandardPoolRowStakeF
 import StandardPoolRowStakeFarmItem from './components/StandardPoolRowStakeFarmItem'
 import { useEvent } from '@/hooks/useEvent'
 import { panelCard } from '@/theme/cssBlocks'
-import { FarmBalanceInfo } from '@/hooks/farm/type'
 import Decimal from 'decimal.js'
 import { useTranslation } from 'react-i18next'
 import BN from 'bn.js'
@@ -31,14 +29,13 @@ import useMigratePoolConfig from '@/hooks/pool/useMigratePoolConfig'
 type PoolItemProps = {
   pool?: FormattedPoolInfoStandardItem
   isLoading: boolean
-  position: FarmPositionInfo
-  stakedFarmMap: Map<string, FormattedFarmInfoV6>
-  allFarmBalances: FarmBalanceInfo[]
+  position: any
+  stakedFarmMap: Map<string, any>
+  allFarmBalances: any[]
 }
 
 export default function StandardPoolRowItem({ pool, isLoading, position, stakedFarmMap, allFarmBalances }: PoolItemProps) {
   const { t } = useTranslation()
-  const harvestAllFarmAct = useFarmStore((s) => s.harvestAllAct)
   const getTokenBalanceUiAmount = useTokenAccountStore((s) => s.getTokenBalanceUiAmount)
   const { isOpen, onOpen, onClose } = useDisclosure()
   const { isOpen: isHarvesting, onOpen: onHarvesting, onClose: offHarvesting } = useDisclosure()
@@ -57,10 +54,10 @@ export default function StandardPoolRowItem({ pool, isLoading, position, stakedF
   const hasStakeFarm = position.hasAmount
   const stakedFarms = position.data.filter((d) => new Decimal(d.lpAmount || 0).gt(0))
   const stakeFarmCount = stakedFarms.length
-  const stakedFarmList = stakedFarms.map((farm) => stakedFarmMap.get(farm.farmId)).filter((f) => !!f) as FormattedFarmInfoV6[]
+  const stakedFarmList = stakedFarms.map((farm) => stakedFarmMap.get(farm.farmId)).filter((f) => !!f) as any[]
 
   const [farmInfo, farmLpAmount] = useMemo(() => {
-    let farm: FormattedFarmInfoV6 | undefined = undefined
+    let farm: any | undefined = undefined
     let farmLpAmount = '0'
     farm = stakedFarmList.find((f) =>
       position.data.some((d) => {

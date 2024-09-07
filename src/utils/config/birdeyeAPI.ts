@@ -1,5 +1,5 @@
 // birdeye api key
-export const birdeyeAuthorizeKey = '34ef0d5d3041451c8e4ef50114856785'
+export const birdeyeAuthorizeKey = '76e4f97ddfa74b42b3e757721f231279'
 export const birdeyHost = 'https://public-api.birdeye.so'
 
 export const birdeyeKlineApiAddress = ({

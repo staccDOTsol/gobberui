@@ -1,7 +1,7 @@
 import { Desktop } from '@/components/MobileDesktop'
 import TokenAvatar from '@/components/TokenAvatar'
 import { OwnerFullData } from '@/hooks/portfolio/useFetchOwnerIdo'
-import { useAppStore, useFarmStore } from '@/store'
+import { useAppStore } from '@/store'
 import { panelCard } from '@/theme/cssBlocks'
 import { colors } from '@/theme/cssVariables/colors'
 import { formatCurrency } from '@/utils/numberish/formatter'
@@ -13,8 +13,6 @@ import { useTranslation } from 'react-i18next'
 
 export default function IdoRowItem(ownerInfo: OwnerFullData & { idoKeys: IdoKeysData }) {
   const { t } = useTranslation()
-  const claimIdoAct = useFarmStore((s) => s.claimIdoAct)
-  const refreshIdoAct = useFarmStore((s) => s.refreshIdoAct)
   const isMobile = useAppStore((s) => s.isMobile)
   const { isOpen: isLoading, onOpen: onLoading, onClose: offLoading } = useDisclosure()
 
@@ -23,12 +21,6 @@ export default function IdoRowItem(ownerInfo: OwnerFullData & { idoKeys: IdoKeys
   const onClick = () => {
     if (!idoKeys) return
     onLoading()
-    claimIdoAct({
-      ownerInfo,
-      idoKeys,
-      onConfirmed: () => setTimeout(() => refreshIdoAct(), 2000),
-      onFinally: offLoading
-    })
   }
 
   if (!idoKeys) return null

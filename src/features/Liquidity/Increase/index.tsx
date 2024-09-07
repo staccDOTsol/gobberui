@@ -6,7 +6,6 @@ import Decimal from 'decimal.js'
 
 import Tabs, { TabItem } from '@/components/Tabs'
 import useFetchPoolById from '@/hooks/pool/useFetchPoolById'
-import useFarmPositions from '@/hooks/portfolio/farm/useFarmPositions'
 import { useEvent } from '@/hooks/useEvent'
 import ChevronLeftIcon from '@/icons/misc/ChevronLeftIcon'
 import { useTokenAccountStore } from '@/store/useTokenAccountStore'
@@ -22,7 +21,6 @@ import Stake from './Stake'
 import PoolInfo from './components/PoolInfo'
 import PositionBalance from './components/PositionBalance'
 import StakeableHint from './components/StakeableHint'
-import useFetchFarmByLpMint from '@/hooks/farm/useFetchFarmByLpMint'
 import useFetchPoolList from '@/hooks/pool/useFetchPoolList'
 
 export type IncreaseLiquidityPageQuery = {
@@ -48,7 +46,7 @@ export default function Increase() {
   ]
   const getTokenBalanceUiAmount = useTokenAccountStore((s) => s.getTokenBalanceUiAmount)
   const fetchTokenAccountAct = useTokenAccountStore((s) => s.fetchTokenAccountAct)
-  const { lpBasedData } = useFarmPositions({})
+  const { lpBasedData } = { lpBasedData: null }
 
   const [tokenPair, setTokenPair] = useState<{ base?: ApiV3Token; quote?: ApiV3Token }>({})
 const  [orgData, setOrgData] = useState<any>()
@@ -56,32 +54,19 @@ const  [orgLoadMore, setOrgLoadMore] = useState<any>()
 const [  isOrgLoadedEnd, setIsOrgLoadedEnd]= useState<any>()
 const [ isOrgLoading, setIsOrgLoading]  = useState<any>()
 
-useEffect(()=>{
-  async function woot(){
-    var {
-      formattedData: orgData,
-      loadMore: orgLoadMore,
-      isLoadEnded: isOrgLoadedEnd,
-      isLoading: isOrgLoading
-    } = 
-  await useFetchPoolList({
-    showFarms: false,
-    shouldFetch: false,
-    type: PoolFetchType.Standard,
-    order: 'desc',
-    sort: 'default' 
-  })
-  setOrgData(orgData)
-  
-  setOrgLoadMore(orgLoadMore)
-  setIsOrgLoadedEnd(isOrgLoadedEnd)
-  setIsOrgLoading(isOrgLoading)
+const [pool, setPool ] = useState<any>()
 
-}
-woot()
-}, [])
-
-  const pool = orgData?.[0]
+  const toawaot =  useFetchPoolById({shouldFetch: true, idList: [urlPoolId]});
+  useEffect(() => {
+    const fetchPools = async () => {
+      const pools = await toawaot;
+      console.log(pools)
+      if (pools && pools.formattedData && pools.formattedData.length > 0) {
+        setPool(pools.formattedData[0]);
+      }
+    };
+    fetchPools();
+  }, [toawaot]);
 
   const isCpmm = pool && pool.programId === CREATE_CPMM_POOL_PROGRAM.toBase58()
   const { data: rpcAmmData, mutate: mutateAmm } = useFetchRpcPoolData({
@@ -97,10 +82,6 @@ woot()
   const rpcData = isCpmm ? rpcCpmmData : rpcAmmData
   const mutateRpc = isCpmm ? mutateCpmm : mutateAmm
 
-  const { formattedData: farms } = useFetchFarmByLpMint({
-    shouldFetch: !!pool && pool.farmOngoingCount === 0,
-    poolLp: pool?.lpMint.address
-  })
   const isPoolNotFound = !!tokenPair.base && !!tokenPair.quote && !isOrgLoading && !pool
 
   const lpBalance = getTokenBalanceUiAmount({
@@ -108,13 +89,6 @@ woot()
     decimals: pool?.lpMint.decimals
   })
 
-  const stakedData = new Decimal(pool ? lpBasedData.get(pool.lpMint.address)?.totalLpAmount || '0' : '0')
-    .div(10 ** (pool?.lpMint.decimals ?? 0))
-    .toString()
-  const hasFarmInfo = pool ? pool.farmOngoingCount > 0 || !!farms.find((f) => f.isOngoing) : false
-
-  increaseTabOptions[1].disabled = !hasFarmInfo
-  increaseTabOptions[1].tooltipProps = !hasFarmInfo ? { label: t('liquidity.no_active_farm'), hasArrow: false } : undefined
 
   const [tabOptions, setTabOptions] = useState<TabItem[]>([])
   const [tabValue, setTabValue] = useState<LiquidityTabOptionType | undefined>(undefined)
@@ -147,10 +121,6 @@ woot()
     }
   }, [urlMode])
 
-  useEffect(() => {
-    setTabOptions(increaseTabOptions)
-  }, [hasFarmInfo])
-
   /** set default token pair onMount */
   useEffect(() => {
     if (!pool) return
@@ -160,9 +130,6 @@ woot()
     })
   }, [pool])
 
-  useEffect(() => {
-    if (!urlPoolId) setUrlQuery({ pool_id: 'AVs9TA4nWDzfPJE9gGVNJMVhcQy3V9PGazuz33BfG2RA' })
-  }, [urlPoolId])
 
   const handleTabChange = useEvent((value: LiquidityTabOptionType) => {
     setTabValue(value)
@@ -193,6 +160,9 @@ woot()
           <VStack spacing={4}>
             {!increaseTabOptions[1].disabled && !lpBalance.isZero ? <StakeableHint /> : undefined}
             <Box {...panelCard} bg={colors.backgroundLight30} borderRadius="20px" overflow="hidden" w="full">
+              <Text fontSize="sm" color="red.500" fontWeight="bold" mb={2}>
+                For some fuckin reason u need to set this way lower than u expecc
+              </Text>
               <Tabs isFitted items={tabOptions} size="md" variant="folder" value={tabValue} onChange={handleTabChange} />
               {mode === 'add' ? (
                 <AddLiquidity
@@ -210,7 +180,6 @@ woot()
                 />
               ) : null}
 
-              {mode === 'stake' ? <Stake poolInfo={pool} disabled={!isOrgLoading && !hasFarmInfo} onRefresh={handleRefresh} /> : null}
             </Box>
           </VStack>
         </GridItem>
@@ -230,7 +199,7 @@ woot()
             />
             <PositionBalance
               myPosition={Number(lpBalance.amount.mul(pool?.lpPrice ?? 0).toFixed(pool?.lpMint.decimals ?? 6))}
-              staked={stakedData}
+              staked={1}
               unstaked={lpBalance.isZero ? '--' : lpBalance.text}
             />
           </VStack>

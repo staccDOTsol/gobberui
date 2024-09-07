@@ -1,96 +1,140 @@
-import { useEffect, useMemo } from 'react'
-import { ApiV3PoolInfoItem, FetchPoolParams, PoolFetchType } from '@raydium-io/raydium-sdk-v2'
-import useSWR, { KeyedMutator } from 'swr'
-import shallow from 'zustand/shallow'
-import { AxiosResponse } from 'axios'
-import axios from '@/api/axios'
-import { isValidPublicKey } from '@/utils/publicKey'
-import { MINUTE_MILLISECONDS } from '@/utils/date'
-
-import { ConditionalPoolType } from './type'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import useSWRInfinite from 'swr/infinite'
+import { KeyedMutator } from 'swr'
+import axios, { AxiosResponse } from 'axios'
+import { shallow } from 'zustand/shallow'
+import { PoolsApiReturn, ApiV3PoolInfoItem, PoolFetchType, ApiV3PoolInfoStandardItem } from '@raydium-io/raydium-sdk-v2'
 import { useAppStore, useTokenStore } from '@/store'
-import { formatPoolData, poolInfoCache, formatAprData } from './formatter'
+import { MINUTE_MILLISECONDS } from '@/utils/date'
+import { isValidPublicKey } from '@/utils/publicKey'
+import { ConditionalPoolType, FormattedPoolInfoStandardItem, ReturnFormattedPoolType, ReturnPoolType } from '@/hooks/pool/type'
+import { formatAprData, formatPoolData } from './formatter'
 
-const fetcher = ([url]: [url: string]) => axios.get<ApiV3PoolInfoItem[]>(url, { skipError: true })
+export const retryCount = 5
+export const skipRetryStatus = new Set([400, 403, 404, 500])
+const logCount = 800
 
-export default function useFetchPoolById<T = ApiV3PoolInfoItem>(
-  props: {
-    shouldFetch?: boolean
-    idList?: (string | undefined)[]
-    refreshInterval?: number
-    readFromCache?: boolean
-    refreshTag?: number
-    keepPreviousData?: boolean
-  } & FetchPoolParams
-): {
-  data?: T[]
-  dataMap: { [key: string]: T }
-  formattedData?: ConditionalPoolType<T>[]
-  formattedDataMap: { [key: string]: ConditionalPoolType<T> }
-  isLoading: boolean
-  error?: any
-  isEmptyResult: boolean
+let refreshTag = Date.now()
+export const refreshPoolCache = () => (refreshTag = Date.now())
+
+
+const PAGE_SIZE = 100
+
+const poolInfoCache: Record<string, any> = {}
+
+export default async function useFetchPoolList<T extends PoolFetchType>(props?: {
+  type?: T
+  pageSize?: number
+  sort?: string
+  order?: 'asc' | 'desc'
+  refreshInterval?: number
+  shouldFetch?: boolean
+  showFarms?: boolean
+  idList?: (string | undefined)[]
+  readFromCache?: boolean
+  keepPreviousData?: boolean
+}): Promise<{  data: ApiV3PoolInfoStandardItem[] // Changed from ReturnPoolType<T>[]
+  formattedData: FormattedPoolInfoStandardItem[] // Changed from ReturnFormattedPoolType<T>[]
+ 
+  isLoadEnded: boolean
+  setSize: (size: number | ((_size: number) => number)) => Promise<AxiosResponse<PoolsApiReturn, any>[] | undefined>
+  size: number
+  loadMore: () => void
+  mutate: KeyedMutator<AxiosResponse<PoolsApiReturn, any>[]>
   isValidating: boolean
-  mutate: KeyedMutator<AxiosResponse<ApiV3PoolInfoItem[], any>>
-} {
+  isLoading: boolean
+  isEmpty: boolean
+  error?: any
+}> {
   const {
+    type = PoolFetchType.All,
+    pageSize = PAGE_SIZE,
+    sort = 'default',
+    order = 'desc',
+    refreshInterval = MINUTE_MILLISECONDS,
     shouldFetch = true,
-    idList = [],
-    refreshInterval = MINUTE_MILLISECONDS * 3,
+    showFarms,
+    idList,
     readFromCache,
-    type,
-    refreshTag,
     keepPreviousData
   } = props || {}
-  const readyIdList = idList.filter((i) => i && isValidPublicKey(i) && !useTokenStore.getState().tokenMap.get(i)) as string[]
-  const [host, searchIdUrl] = useAppStore((s) => [s.urlConfigs.BASE_HOST, s.urlConfigs.POOL_SEARCH_BY_ID], shallow)
 
-  const cacheDataList = useMemo(
-    () =>
-      readFromCache
-        ? readyIdList
-            .map((id) => poolInfoCache.get(id))
-            .filter(
-              (d) => d !== undefined && (!type || type === PoolFetchType.All || type.toLocaleLowerCase() === d.type.toLocaleLowerCase())
-            )
-        : [],
-    [JSON.stringify(readyIdList)]
-  ) as ApiV3PoolInfoItem[]
+  const readyIdList = idList?.filter((i) => i && isValidPublicKey(i) && !useTokenStore.getState().tokenMap.get(i)) as string[]
 
-  const url = !readyIdList.length || readyIdList.length === cacheDataList.length || !shouldFetch ? null : host + searchIdUrl
-
-  const { data, isLoading, error, ...rest } = useSWR(url ? [url + `?ids=${readyIdList.join(',')}`, refreshTag] : null, fetcher, {
-    dedupingInterval: refreshInterval,
-    focusThrottleInterval: refreshInterval,
-    refreshInterval,
-    keepPreviousData
-  })
-  const resData = useMemo(
-    () => [
-      ...cacheDataList,
-      ...(data?.data.filter(
-        (d) => !!d && (!type || type === PoolFetchType.All || type.toLocaleLowerCase() === d.type.toLocaleLowerCase())
-      ) || [])
-    ],
-    [data, cacheDataList, type]
-  )
-  const dataMap = useMemo(() => resData.reduce((acc, cur) => ({ ...acc, [cur.id]: cur }), {}), [resData]) as {
-    [key: string]: T
+  if (type === undefined) {
+    console.warn('Pool fetch type not specified, defaulting to PoolFetchType.All');
   }
-  const formattedData = useMemo(() => (resData ? resData.map(formatPoolData) : undefined), [resData]) as ConditionalPoolType<T>[]
-  const formattedDataMap = useMemo(() => formattedData.reduce((acc, cur) => ({ ...acc, [cur.id]: cur }), {}), [formattedData]) as {
-    [key: string]: ConditionalPoolType<T>
+
+  let data: any;
+  let isLoadEnded = false
+  let error = null
+
+  if (true) {
+    try {
+      const url = 'http://localhost:3002/api/gpa'
+        const params: any = {
+        idList: readyIdList
+      }
+
+      const response = await axios.get<PoolsApiReturn>(`${url}?idList=${readyIdList ? readyIdList.join(',') : ''}`)
+     // @ts-ignore
+      data = await response.data;
+      isLoadEnded = true;
+    } catch (err) {
+      error = err
+      console.error('Error fetching pool list:', err)
+    }
   }
-  const isEmptyResult = !!idList.length && !isLoading && (!data || !resData.length || !!error)
+
+  // Move these calculations inside the component body
+  let resData: ReturnPoolType<ApiV3PoolInfoStandardItem>[] = [];
+  let dataMap: { [key: string]: ApiV3PoolInfoStandardItem } = {};
+  let formattedData: FormattedPoolInfoStandardItem[] = [];
+  let formattedDataMap: { [key: string]: FormattedPoolInfoStandardItem } = {};
+
+  if (data) {
+    resData = data.filter((d: any) => !!d).map(formatAprData);
+    dataMap = resData.reduce((acc, cur) => ({ ...acc, [cur.id]: cur }), {});
+    // @ts-ignore
+    formattedData = resData.map(formatPoolData);
+    formattedDataMap = formattedData.reduce((acc, cur) => ({ ...acc, [cur.id]: cur }), {});
+  }
+  // Return early if no data is fetched or if there's an error
+  if (!data.length || error) {
+    return {
+      // @ts-ignore
+      setSize: async () => {},
+      loadMore: () => {},
+      error,
+      data: [],
+      formattedData: [],
+      isLoadEnded: true,
+      isEmpty: true,
+      size: 0,
+      // @ts-ignore
+      mutate: async () => {},
+      isValidating: false,
+      isLoading: false
+    }
+  }
+
+  const setSize = async () => {}
+  const loadMore = () => {}
+  const isEmpty = isLoadEnded && (!data || !data.length)
+
 
   return {
-    data: data?.data.filter(Boolean).map(formatAprData) as T[],
-    dataMap,
+    // @ts-ignore
+    setSize,
+    loadMore,
+    error,  data: data,
     formattedData,
-    formattedDataMap,
-    isLoading,
-    error,
-    isEmptyResult,
-    ...rest
+    isLoadEnded,
+    isEmpty,
+    size: 1,
+    // @ts-ignore
+    mutate: async () => {},
+    isValidating: false,
+    isLoading: !isLoadEnded
   }
 }

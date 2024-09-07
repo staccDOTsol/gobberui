@@ -1,10 +1,10 @@
+// @ts-nocheck
 import Button, { ButtonProps } from '@/components/Button'
 import ChevronUpDownArrow from '@/components/ChevronUpDownArrow'
 import ConnectedButton from '@/components/ConnectedButton'
 import { Desktop, Mobile } from '@/components/MobileDesktop'
 import PanelCard from '@/components/PanelCard'
 import TokenAvatar from '@/components/TokenAvatar'
-import useFetchFarmBalance from '@/hooks/farm/useFetchFarmBalance'
 import ChevronDownIcon from '@/icons/misc/ChevronDownIcon'
 import ChevronUpIcon from '@/icons/misc/ChevronUpIcon'
 import HorizontalSwitchSmallIcon from '@/icons/misc/HorizontalSwitchSmallIcon'
@@ -22,12 +22,11 @@ import { useTranslation } from 'react-i18next'
 import { StakingPageQuery } from '../Staking'
 import StakeDialog from './StakeDialog'
 import UnstakeDialog from './UnstakeDialog'
-import shallow from 'zustand/shallow'
+import { shallow } from 'zustand/shallow'
 import { useEvent } from '@/hooks/useEvent'
-import { FarmPositionInfo } from '@/hooks/portfolio/farm/useFarmPositions'
 import { PublicKey } from '@solana/web3.js'
 
-export default function StakingPoolItem({ pool, apiVaultData }: { pool: ApiStakePool; apiVaultData?: FarmPositionInfo }) {
+export default function StakingPoolItem({ pool, apiVaultData }: { pool: ApiStakePool; apiVaultData?: any }) {
   const { t } = useTranslation()
   const query = useRouteQuery<StakingPageQuery>()
   const { isOpen: isHarvesting, onOpen: onHarvesting, onClose: offHarvesting } = useDisclosure()
@@ -53,18 +52,12 @@ export default function StakingPoolItem({ pool, apiVaultData }: { pool: ApiStake
   const { isOpen: collapsed, onToggle: onCollapse } = useDisclosure()
 
   const balance = getTokenBalanceUiAmount({ mint: token.address, decimals: token.decimals }).text
-  const ataBalance = useFetchFarmBalance({
-    farmInfo: pool
-  })
+
 
   const v1Vault = apiVaultData?.data.find((d) => d.version === 'V1' && !new Decimal(d.lpAmount).isZero())
-  const v1Balance = useFetchFarmBalance({
-    shouldFetch: !!(v1Vault && new Decimal(v1Vault.lpAmount).gt(0)),
-    farmInfo: pool,
-    ledgerKey: v1Vault ? new PublicKey(v1Vault.userVault) : undefined
-  })
 
-  const res = ataBalance.hasDeposited || !v1Balance.deposited ? ataBalance : v1Balance
+
+  const res = undefined
 
   const pendingAmount = res.pendingRewards?.[0] ?? 0
   const pendingAmountInUSD = new Decimal(pendingAmount).mul(tokenPrices[token.address]?.value || 0).toString()

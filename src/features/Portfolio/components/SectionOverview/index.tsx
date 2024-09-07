@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { Heading, SimpleGrid } from '@chakra-ui/react'
 import { colors } from '@/theme/cssVariables'
-import useClmmPortfolioData from '@/hooks/portfolio/clmm/useClmmPortfolioData'
 import useAllStandardPoolPosition from '@/hooks/portfolio/useAllStandardPoolPosition'
 import PortfolioIdle from './components/PortfolioIdle'
 import PortfolioInfo from './components/PortfolioInfo'
@@ -17,19 +16,24 @@ export enum AssetType {
 export default function SectionOverview() {
   const { t } = useTranslation()
   const { idleList, idleBalance } = useTokenBalance()
+const clmmPoolAssets: any = []
+const totalClmmPosition = 0 
+const clmmBalanceByMint = {}
 
-  const { data: clmmPoolAssets, totalUSD: totalClmmPosition, clmmBalanceByMint } = useClmmPortfolioData({ type: AssetType.CONCENTRATED })
-  const {
+
+const {
     data: standardPoolList,
     standardPoolListByMint,
     totalUSD: totalStandardPosition
   } = useAllStandardPoolPosition({ type: AssetType.STANDARD })
 
-  const productiveBalance = totalClmmPosition.add(totalStandardPosition).toString()
+  const productiveBalance = (totalStandardPosition).toString()
 
   const tokenAssetsNew = useMemo(() => {
-    const total = { ...clmmBalanceByMint }
+    const total: any = { ...clmmBalanceByMint }
     Object.keys(standardPoolListByMint).forEach((key) => {
+
+      // @ts-ignore
       const data = standardPoolListByMint[key]
       total[key] = {
         mint: total[key]?.mint || data.mint,
@@ -37,14 +41,15 @@ export default function SectionOverview() {
         usd: new Decimal(total[key]?.usd || 0).add(data.usd).toString()
       }
     })
-    const allUSD = Object.values(total).reduce((acc, cur) => acc.add(cur.usd), new Decimal(0))
-
     return Object.values(total).map((data) => ({
+      // @ts-ignore
       key: data.mint?.symbol || data.mint.address.slice(0, 6),
+      // @ts-ignore
       value: data.usd,
-      percentage: new Decimal(data.usd).div(allUSD).mul(100).toDecimalPlaces(2).toNumber()
+      // @ts-ignore
+      percentage: new Decimal(data.usd).div(new Decimal(productiveBalance).add(idleBalance)).mul(100).toDecimalPlaces(2).toNumber()
     }))
-  }, [clmmBalanceByMint, standardPoolListByMint])
+  }, [standardPoolListByMint])
 
   return (
     <>

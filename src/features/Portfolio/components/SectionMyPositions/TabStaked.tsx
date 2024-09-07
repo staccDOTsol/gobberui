@@ -2,15 +2,11 @@ import { Flex, Text, Button, Skeleton } from '@chakra-ui/react'
 import { useTranslation } from 'react-i18next'
 import { routeToPage } from '@/utils/routeTools'
 import useFetchStakePools from '@/hooks/pool/useFetchStakePools'
-import StakingPositionRawItem from './components/Staked/StakingPositionRawItem'
 import Decimal from 'decimal.js'
 import toApr from '@/utils/numberish/toApr'
 import { colors } from '@/theme/cssVariables/colors'
 import { panelCard } from '@/theme/cssBlocks'
 
-import { FarmBalanceInfo } from '@/hooks/farm/type'
-import { FarmPositionInfo } from '@/hooks/portfolio/farm/useFarmPositions'
-import useFetchFarmBalance from '@/hooks/farm/useFetchFarmBalance'
 import { PublicKey } from '@solana/web3.js'
 
 export default function MyPositionTabStaked({
@@ -18,8 +14,8 @@ export default function MyPositionTabStaked({
   farmLpBasedData,
   refreshTag
 }: {
-  allFarmBalances: FarmBalanceInfo[]
-  farmLpBasedData: Map<string, FarmPositionInfo>
+  allFarmBalances: any[]
+  farmLpBasedData: Map<string, any>
   refreshTag: number
 }) {
   const { t } = useTranslation()
@@ -28,30 +24,14 @@ export default function MyPositionTabStaked({
   const pool = activeStakePools[0]
   const ataBalance = allFarmBalances.find((f) => f.id === pool?.id)
 
-  const v1Vault = farmLpBasedData.get(pool?.lpMint.address || '')?.data.find((d) => d.version === 'V1' && !new Decimal(d.lpAmount).isZero())
-  const v1Balance = useFetchFarmBalance({
-    shouldFetch: !!(v1Vault && new Decimal(v1Vault.lpAmount).gt(0)),
-    farmInfo: pool,
-    ledgerKey: v1Vault ? new PublicKey(v1Vault.userVault) : undefined
-  })
+  const v1Vault = farmLpBasedData.get(pool?.lpMint.address || '')?.data.find((d:any) => d.version === 'V1' && !new Decimal(d.lpAmount).isZero())
 
-  const res = ataBalance?.hasDeposited || !v1Balance.hasDeposited ? ataBalance : v1Balance
+  const res = ataBalance?.hasDeposited || (v1Vault && !new Decimal(v1Vault.lpAmount).isZero()) ? ataBalance : { hasDeposited: !!v1Vault, deposited: v1Vault?.lpAmount || '0', pendingRewards: [ '0'], vault: PublicKey.default }
 
   return (
     <Flex direction="column" gap={4}>
       {pool && res && res.hasDeposited ? (
-        <StakingPositionRawItem
-          key={`user-position-staked-pool-${pool.id}-row`}
-          pool={pool}
-          staked={{
-            token: pool.lpMint,
-            amount: res.deposited,
-            pendingReward: res.pendingRewards[0] || '0',
-            v1Vault: v1Balance.hasDeposited ? v1Balance.vault : undefined
-          }}
-          onConfirmed={v1Balance.hasDeposited ? v1Balance.mutate : undefined}
-          apr={toApr({ val: pool.apr || 0 })}
-        />
+       <></>
       ) : (
         <Flex
           {...panelCard}

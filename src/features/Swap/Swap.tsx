@@ -25,9 +25,9 @@ import { getMintPriority } from '@/utils/token'
 import Tooltip from '@/components/Tooltip'
 import { MoonpayBuy } from '@/components/Moonpay'
 import { toastSubject } from '@/hooks/toast/useGlobalToast'
+import useFetchPoolList from '@/hooks/pool/useFetchPoolList'
 
 export default function Swap() {
-  // const { inputMint: cacheInput, outputMint: cacheOutput } = getSwapPairCache()
   const [inputMint, setInputMint] = useState<string>(PublicKey.default.toBase58())
   const [outputMint, setOutputMint] = useState<string>(RAYMint.toBase58())
   const [isPCChartShown, setIsPCChartShown] = useState<boolean>(true)
@@ -54,21 +54,44 @@ export default function Swap() {
   const quoteToken = useMemo(() => tokenMap.get(quoteMint), [tokenMap, quoteMint])
   const [isDirectionNeedReverse, setIsDirectionNeedReverse] = useState<boolean>(false)
 
+  // Fetch pool list
+  const [poolList, setPoolList] = useState<any[]>([])
+  
+  useEffect(() => {
+    const fetchPools = async () => {
+      const result = await useFetchPoolList({
+        shouldFetch: true,
+      })
+      setPoolList(result.formattedData)
+    }
+    fetchPools()
+  }, [])
+
+  // Find valid routes
+  
+  const validRoutes = useMemo(() => {
+    if (!poolList) return []
+    return poolList.filter(pool => 
+      (pool.mintA.address === inputMint && pool.mintB.address === outputMint) ||
+      (pool.mintA.address === outputMint && pool.mintB.address === inputMint)
+    )
+  }, [poolList, inputMint, outputMint])
+
   useEffect(() => {
     const { inputMint: cacheInput, outputMint: cacheOutput } = getSwapPairCache()
     if (cacheInput) setInputMint(cacheInput)
     if (cacheOutput && cacheOutput !== cacheInput) setOutputMint(cacheOutput)
     setCacheLoaded(true)
   }, [])
+
   useEffect(() => {
-    // preserve swap chart default direction on page refresh by mint priority
     if (cacheLoaded) {
       if (getMintPriority(baseMint) > getMintPriority(quoteMint)) {
         setDirectionReverse(true)
       }
     }
-  }, [cacheLoaded])
-  // reset directionReverse when inputMint or outputMint changed
+  }, [cacheLoaded, baseMint, quoteMint])
+
   useIsomorphicLayoutEffect(() => {
     if (!cacheLoaded) return
     if (isDirectionNeedReverse) {
@@ -82,7 +105,7 @@ export default function Swap() {
       inputMint,
       outputMint
     })
-  }, [inputMint, outputMint, cacheLoaded])
+  }, [inputMint, outputMint, cacheLoaded, isDirectionNeedReverse])
 
   useIsomorphicLayoutEffect(() => {
     if (klineRef.current) {
@@ -93,7 +116,6 @@ export default function Swap() {
   }, [])
 
   useEffect(() => {
-    // inputMint === solMintAddress || outputMint === solMintAddress ? setIsBlinkReferralActive(true) : setIsBlinkReferralActive(false)
     setIsBlinkReferralActive(true)
     const def = PublicKey.default.toString()
     const _inputMint = inputMint === def ? 'sol' : inputMint
@@ -102,7 +124,7 @@ export default function Swap() {
     const walletAddress = publicKey?.toBase58()
     const copyUrl = connected ? href + `&referrer=${walletAddress}` : href
     setValue(copyUrl)
-  }, [inputMint, outputMint, connected, publicKey])
+  }, [inputMint, outputMint, connected, publicKey, setValue])
 
   return (
     <VStack
@@ -183,6 +205,7 @@ export default function Swap() {
               onInputMintChange={setInputMint}
               onOutputMintChange={setOutputMint}
               onDirectionNeedReverse={() => setIsDirectionNeedReverse((b) => !b)}
+              validRoutes={validRoutes}
             />
           </PanelCard>
         </GridItem>
@@ -211,8 +234,6 @@ export default function Swap() {
                 untilDate={untilDate.current}
                 baseToken={baseToken}
                 quoteToken={quoteToken}
-                // onDirectionToggle={() => setDirectionReverse((b) => !b)}
-                // onTimeTypeChange={setSelectedTimeType}
               />
               <SwapKlinePanelMobileDrawer
                 untilDate={untilDate.current}

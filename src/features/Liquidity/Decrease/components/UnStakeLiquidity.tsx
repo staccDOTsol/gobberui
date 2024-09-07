@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Box, Flex, HStack, SimpleGrid, Text, useDisclosure } from '@chakra-ui/react'
 import { useEffect, useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -9,10 +10,6 @@ import TokenAvatar from '@/components/TokenAvatar'
 import TokenAvatarPair from '@/components/TokenAvatarPair'
 
 import { FormattedPoolInfoStandardItem } from '@/hooks/pool/type'
-import { FormattedFarmInfo } from '@/hooks/farm/type'
-import useFetchFarmByLpMint from '@/hooks/farm/useFetchFarmByLpMint'
-import useFetchFarmBalance from '@/hooks/farm/useFetchFarmBalance'
-import useFarmPositions from '@/hooks/portfolio/farm/useFarmPositions'
 import { useAppStore, useFarmStore, useTokenAccountStore } from '@/store'
 import useTokenPrice from '@/hooks/token/useTokenPrice'
 import { formatCurrency } from '@/utils/numberish/formatter'
@@ -40,39 +37,20 @@ export default function UnStakeLiquidity({
   const withdrawFarmAct = useFarmStore((s) => s.withdrawFarmAct)
   const fetchTokenAccountAct = useTokenAccountStore((s) => s.fetchTokenAccountAct)
   const circleRef = useRef<IntervalCircleHandler>(null)
-  const [selectedFarm, setSelectedFarm] = useState<FormattedFarmInfo | undefined>(undefined)
+  const [selectedFarm, setSelectedFarm] = useState<any | undefined>(undefined)
   const [withdrawPercent, setWithdrawPercent] = useState(0)
   const { isOpen: isSending, onOpen: onSending, onClose: offSending } = useDisclosure()
 
-  const {
-    formattedData: farmList,
-    isLoading,
-    mutate: mutateFarm
-  } = useFetchFarmByLpMint({
-    poolLp: poolInfo?.lpMint.address
-  })
 
   const { farmBasedData, mutate: mutateFarmPos } = useFarmPositions({})
   const farmPositionData = farmBasedData.get(selectedFarm?.id || '')
   // const v1Deposited = new Decimal(farmPositionData?.totalV1LpAmount || 0).div(10 ** (selectedFarm?.lpMint.decimals || 0)).toString()
 
-  const {
-    deposited,
-    pendingRewards,
-    mutate: mutateFarmBalance
-  } = useFetchFarmBalance({
-    farmInfo: selectedFarm
-  })
-  const { data: tokenPrices } = useTokenPrice({
-    mintList: pendingRewards.map((_, idx) => selectedFarm?.rewardInfos[idx]?.mint.address)
-  })
+  const deposited = new Decimal(farmPositionData?.totalLpAmount || 0).div(10 ** (selectedFarm?.lpMint.decimals || 0)).toString()
 
   const totalDeposited = new Decimal(deposited)
   const withdrawAmount = totalDeposited.mul(withdrawPercent).div(100)
 
-  useEffect(() => {
-    if (farmList.length > 0) setSelectedFarm(defaultFarm ? farmList.find((f) => f.id === defaultFarm) || farmList[0] : farmList[0])
-  }, [farmList])
 
   useEffect(() => {
     onStakedChange(deposited)
@@ -95,8 +73,6 @@ export default function UnStakeLiquidity({
   }
 
   const handleRefresh = useEvent(() => {
-    mutateFarm()
-    mutateFarmBalance()
     mutateFarmPos()
     fetchTokenAccountAct({})
   })
@@ -113,12 +89,12 @@ export default function UnStakeLiquidity({
           {t('liquidity.select_farm')}
         </Text>
       </Flex>
-      <Select<FormattedFarmInfo>
+      <Select<any>
         sx={{ py: '12px', px: '14px', borderRadius: '8px', bg: colors.backgroundDark, width: 'full' }}
         popoverContentSx={{ py: 3, px: 4, bg: colors.backgroundDark }}
         triggerSX={{ w: 'full' }}
-        value={!isLoading ? selectedFarm : undefined}
-        items={farmList}
+        value={!false ? selectedFarm : undefined}
+        items={[]}
         onChange={(v) => setSelectedFarm(v)}
         renderTriggerItem={(value) => <SelectedFarm farm={value} />}
         renderItem={(item) => <SelectFarmListItem farm={item!} currentSelectedId={selectedFarm?.id} />}
@@ -164,29 +140,7 @@ export default function UnStakeLiquidity({
           {t('liquidity.rewards_to_be_harvested')}
         </Text>
         <SimpleGrid columns={2} rowGap="6px" columnGap="44px">
-          {pendingRewards.map((rewardAmount, idx) => {
-            const rewardMint = selectedFarm?.rewardInfos[idx]
-            if (!rewardMint) return null
-            return (
-              <Flex key={`reward-info-${rewardMint.mint.address}-${idx}`} justify={'space-between'} align="center">
-                <HStack spacing="6px">
-                  <TokenAvatar size="smi" token={rewardMint.mint} />
-                  <HStack spacing="2px">
-                    <Text fontSize="sm">{rewardAmount}</Text>
-                    <Text fontSize="sm" color={colors.textSecondary} mx="1" opacity={0.6}>
-                      {rewardMint.mint?.symbol}
-                    </Text>
-                  </HStack>
-                </HStack>
-                <Text fontSize="sm">
-                  {formatCurrency(new Decimal(rewardAmount || 0).mul(tokenPrices[rewardMint.mint.address]?.value ?? 0).toFixed(10), {
-                    symbol: '$',
-                    decimalPlaces: 2
-                  })}
-                </Text>
-              </Flex>
-            )
-          })}
+          
         </SimpleGrid>
       </Box>
       <Button

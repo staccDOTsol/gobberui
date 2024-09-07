@@ -13,7 +13,7 @@ import SearchIcon from '@/icons/misc/SearchIcon'
 import useResizeObserver from '@/hooks/useResizeObserver'
 import { filterTokenFn } from '@/utils/token'
 import { isValidPublicKey } from '@/utils/publicKey'
-import shallow from 'zustand/shallow'
+import { shallow } from 'zustand/shallow'
 
 type SearchBarProps = {
   value: string

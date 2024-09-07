@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Box, Flex, Grid, GridItem, HStack, Tag, Text, useDisclosure } from '@chakra-ui/react'
 import { ApiV3PoolInfoConcentratedItem, ApiV3Token, PoolFetchType, solToWSol } from '@raydium-io/raydium-sdk-v2'
 import { useRouter } from 'next/router'

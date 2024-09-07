@@ -10,7 +10,7 @@ import { ApiV3Token, RAYMint, SOL_INFO, TokenInfo } from '@raydium-io/raydium-sd
 import { PublicKey } from '@solana/web3.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import shallow from 'zustand/shallow'
+import { shallow } from 'zustand/shallow'
 import CircleInfo from '@/icons/misc/CircleInfo'
 import { getSwapPairCache, setSwapPairCache } from '../util'
 import { urlToMint, mintToUrl, isSolWSol, getMintPriority } from '@/utils/token'
@@ -34,11 +34,13 @@ import { debounce } from '@/utils/functionMethods'
 export function SwapPanel({
   onInputMintChange,
   onOutputMintChange,
-  onDirectionNeedReverse
+  onDirectionNeedReverse,
+  validRoutes,
 }: {
   onInputMintChange?: (mint: string) => void
   onOutputMintChange?: (mint: string) => void
-  onDirectionNeedReverse?(): void
+  onDirectionNeedReverse?(): void,
+  validRoutes: any[]
 }) {
   const query = useRouteQuery<{ inputMint: string; outputMint: string }>()
   const [urlInputMint, urlOutputMint] = [urlToMint(query.inputMint), urlToMint(query.outputMint)]
@@ -102,19 +104,37 @@ export function SwapPanel({
   })
 
   const isSwapBaseIn = swapType === 'BaseIn'
-  const { response, data, isLoading, isValidating, error, openTime, mutate } = useSwap({
+  const result = useSwap({
     inputMint,
     outputMint,
     amount: new Decimal(amountIn || 0)
       .mul(10 ** ((isSwapBaseIn ? tokenInput?.decimals : tokenOutput?.decimals) || 0))
       .toFixed(0, Decimal.ROUND_FLOOR),
     swapType,
-    refreshInterval: isSending || isHightRiskOpen ? 3 * 60 * 1000 : 1000 * 30
-  })
+    refreshInterval: isSending || isHightRiskOpen ? 3 * 60 * 1000 : 1000 * 30,
+    validRoutes
+  });
 
+  const { response, data, isLoading, isValidating, error, openTime } = result || {};
   const onPriceUpdatedConfirm = useEvent(() => {
     setNeedPriceUpdatedAlert(false)
-    sendingResult.current = response as ApiSwapV1OutSuccess
+    if (response && 'data' in response) {
+      sendingResult.current = {
+        id: response.id ?? '',
+        success: true,
+        version: response.version ?? '',
+        msg: response.msg as unknown ?? '' as unknown,
+        data: {
+          ...response.data,
+          swapType: swapType,
+          inputMint: inputMint,
+          outputMint: outputMint,
+          otherAmountThreshold: response.data.outputAmount, // Adjust this if needed
+          slippageBps: 0, // Set appropriate value
+          routePlan: response.data.routes // Assuming routes can be used as routePlan
+        }
+      } as ApiSwapV1OutSuccess
+    }
   })
 
   const computeResult = needPriceUpdatedAlert ? sendingResult.current?.data : data
@@ -211,7 +231,7 @@ export function SwapPanel({
   const balanceAmount = getTokenBalanceUiAmount({ mint: inputMint, decimals: tokenInput?.decimals }).amount
   const balanceNotEnough = balanceAmount.lt(inputAmount || 0) ? t('error.balance_not_enough') : undefined
   const isSolFeeNotEnough = inputAmount && isSolWSol(inputMint || '') && balanceAmount.sub(inputAmount || 0).lt(DEFAULT_SOL_RESERVER)
-  const swapError = (error && i18n.exists(`swap.error_${error}`) ? t(`swap.error_${error}`) : error) || balanceNotEnough
+  const swapError = (error && i18n.exists(`swap.error_${error}`) ? 'error' : error) || balanceNotEnough
   const isPoolNotOpenError = !!swapError && !!openTime
 
   const handleHighRiskConfirm = useEvent(() => {
@@ -221,10 +241,11 @@ export function SwapPanel({
 
   const handleClickSwap = () => {
     if (!response) return
-    sendingResult.current = response as ApiSwapV1OutSuccess
+    sendingResult.current = response as any
     onSending()
     swapTokenAct({
-      swapResponse: response as ApiSwapV1OutSuccess,
+      // @ts-ignore
+      swapResponse: response ,
       wrapSol: tokenInput?.address === PublicKey.default.toString(),
       unwrapSol: tokenOutput?.address === PublicKey.default.toString(),
       onCloseToast: offSending,
@@ -235,7 +256,6 @@ export function SwapPanel({
       },
       onError: () => {
         offSending()
-        mutate()
       }
     })
   }
@@ -252,7 +272,6 @@ export function SwapPanel({
 
   const handleRefresh = useEvent(() => {
     if (isSending || isHightRiskOpen) return
-    mutate()
     if (Date.now() - refreshTokenAccTime < 10 * 1000) return
     fetchTokenAccountAct({})
   })
@@ -265,7 +284,25 @@ export function SwapPanel({
     if (isSolWSol(tokenOutput?.address) && isSolWSol(token.address)) return false
     return true
   })
-
+  const normalizedComputeResult = computeResult ? {
+    swapType,
+    inputMint,
+    outputMint,
+    inputAmount: computeResult.inputAmount,
+    outputAmount: computeResult.outputAmount,
+    otherAmountThreshold: swapType === 'BaseIn' ? computeResult.outputAmount : computeResult.inputAmount,
+    slippageBps: Number(10000),
+    priceImpactPct: computeResult.priceImpactPct,
+    routePlan: validRoutes.map(route => ({
+      poolId: route.poolId,
+      inputMint: route.inputMint,
+      outputMint: route.outputMint,
+      feeMint: route.feeMint,
+      feeRate: route.feeRate,
+      feeAmount: route.feeAmount
+    }))
+  } : undefined;
+  
   return (
     <>
       <Flex mb={[4, 5]} direction="column">
@@ -305,8 +342,8 @@ export function SwapPanel({
             amountIn={amountIn}
             tokenInput={tokenInput}
             tokenOutput={tokenOutput}
-            isComputing={isComputing && !isSending}
-            computedSwapResult={computeResult}
+            isComputing={isComputing == undefined ? true : isComputing  && !isSending}
+            computedSwapResult={normalizedComputeResult}
             onRefresh={handleRefresh}
           />
         </Box>

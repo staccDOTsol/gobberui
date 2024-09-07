@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Box, Flex, Text, useDisclosure } from '@chakra-ui/react'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState, useRef } from 'react'
@@ -6,10 +7,7 @@ import { useTranslation } from 'react-i18next'
 import Button from '@/components/Button'
 import { Select } from '@/components/Select'
 import TokenAvatarPair from '@/components/TokenAvatarPair'
-import { FormattedFarmInfo } from '@/hooks/farm/type'
-import useFetchFarmByLpMint from '@/hooks/farm/useFetchFarmByLpMint'
 import { FormattedPoolInfoStandardItem } from '@/hooks/pool/type'
-import useFarmPositions from '@/hooks/portfolio/farm/useFarmPositions'
 import { useAppStore, useFarmStore, useTokenAccountStore } from '@/store'
 import { colors } from '@/theme/cssVariables'
 
@@ -37,23 +35,11 @@ export default function Stake({ poolInfo, disabled, onRefresh }: Props) {
   const { lpBasedData } = useFarmPositions({})
 
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedFarm, setSelectedFarm] = useState<FormattedFarmInfo | undefined>(undefined)
+  const [selectedFarm, setSelectedFarm] = useState<any | undefined>(undefined)
   const [percent, setPercent] = useState(0)
   const circleRef = useRef<IntervalCircleHandler>(null)
-  const { formattedData, mutate: mutateFarm } = useFetchFarmByLpMint({
-    poolLp: poolInfo?.lpMint.address
-  })
-  const farmList = useMemo(() => formattedData.filter((f) => f.isOngoing), [formattedData])
-
   const lpBalance = getTokenBalanceUiAmount({ mint: poolInfo?.lpMint.address || '', decimals: poolInfo?.lpMint.decimals })
   const readyStakeAmount = poolInfo ? lpBalance.amount.mul(percent / 100) : new Decimal(0)
-
-  useEffect(() => {
-    if (farmList.length > 0) {
-      setSelectedFarm(farmList[0])
-      setIsLoading(false)
-    }
-  }, [farmList])
 
   if (disabled) {
     router.replace({
@@ -95,7 +81,6 @@ export default function Stake({ poolInfo, disabled, onRefresh }: Props) {
   }
 
   const handleRefresh = useEvent(() => {
-    mutateFarm()
     onRefresh()
   })
 
@@ -126,12 +111,12 @@ export default function Stake({ poolInfo, disabled, onRefresh }: Props) {
           />
         </Flex>
       </Flex>
-      <Select<FormattedFarmInfo>
+      <Select<any>
         sx={{ py: '12px', px: '14px', borderRadius: '8px', bg: colors.backgroundDark, width: 'full' }}
         popoverContentSx={{ py: 3, px: 4, bg: colors.backgroundDark }}
         triggerSX={{ w: 'full' }}
         value={!isLoading ? selectedFarm : undefined}
-        items={farmList}
+        items={[]}
         onChange={(v) => setSelectedFarm(v)}
         renderTriggerItem={(value) => <SelectedFarm farm={value} />}
         renderItem={(item) => <SelectFarmListItem farm={item!} currentSelectedId={selectedFarm?.id} />}

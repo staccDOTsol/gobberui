@@ -18,7 +18,7 @@ import StakeLpModal from './components/StakeLpModal'
 import { SlippageAdjuster } from '@/components/SlippageAdjuster'
 
 import Decimal from 'decimal.js'
-import shallow from 'zustand/shallow'
+import { shallow } from 'zustand/shallow'
 // import { QuestionToolTip } from '@/components/QuestionToolTip'
 import { useEvent } from '@/hooks/useEvent'
 import { throttle } from '@/utils/functionMethods'
