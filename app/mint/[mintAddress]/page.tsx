@@ -308,6 +308,10 @@ export default function MintPage() {
   return (
     <Box className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
       <Title order={1} className="text-2xl md:text-4xl font-bold mb-4 md:mb-8 text-center text-green-400">The Token Gobbler</Title>
+      <Box className="flex justify-between items-center mb-4">
+        <Text className="text-lg font-semibold">Buy Price: {buyPrice ? `${buyPrice.toFixed(6)} SOL` : 'N/A'}</Text>
+        <Text className="text-lg font-semibold">Sell Price: {sellPrice ? `${sellPrice.toFixed(6)} SOL` : 'N/A'}</Text>
+      </Box>
       
       <Paper className="max-w-4xl mx-auto bg-gray-800 p-4 md:p-8 rounded-lg shadow-lg">
         <Box className="mb-4 md:mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
