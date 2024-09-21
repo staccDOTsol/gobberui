@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { InfluxDB } from '@influxdata/influxdb-client';
-const token = "myinfluxdbtoken";
+const token = "r7f8CQBWFBrUjjfqz_NqOSVs4FFz0cWQ_qzQ_cMwYmCipaRFpRrgBasfFE53mZ045kRF7xs7bvFdPZcf9qKTYQ==";
 const url ="http://localhost:8086";
 const org =  "myorg";
 const bucket = 'solana_trades';

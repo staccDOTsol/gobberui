@@ -3,7 +3,7 @@ import { InfluxDB, Point } from '@influxdata/influxdb-client'
 import { AMM } from '../../utils/amm'
 import { Connection, PublicKey } from '@solana/web3.js'
 
-const token = process.env.INFLUXDB_TOKEN || "myinfluxdbtoken";
+const token = process.env.INFLUXDB_TOKEN || "r7f8CQBWFBrUjjfqz_NqOSVs4FFz0cWQ_qzQ_cMwYmCipaRFpRrgBasfFE53mZ045kRF7xs7bvFdPZcf9qKTYQ==";
 const url = "http://localhost:8086";
 const org = "myorg";
 const bucket = 'solana_trades'
