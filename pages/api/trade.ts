@@ -4,9 +4,9 @@ import { AMM } from '../../utils/amm'
 import { Connection, PublicKey } from '@solana/web3.js'
 
 const token = process.env.INFLUXDB_TOKEN || "myinfluxdbtoken";
-const url = process.env.INFLUXDB_URL || "http://influxdb:8086";
-const org = process.env.INFLUXDB_ORG || "myorg";
-const bucket = process.env.INFLUXDB_BUCKET || 'solana_trades'
+const url = "http://localhost:8086";
+const org = "myorg";
+const bucket = 'solana_trades'
 
 const influxDB = new InfluxDB({ url, token })
 const connection = new Connection(process.env.GEYSER_ENDPOINT || "https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW")
