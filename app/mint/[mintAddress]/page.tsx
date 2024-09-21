@@ -48,7 +48,7 @@ export default function MintPage() {
         const ixs: any = []
         const ata = await getAssociatedTokenAddressSync( new PublicKey(mintAddress), wallet.publicKey, true, TOKEN_2022_PROGRAM_ID)
         const ataAccountMAybe = await connection.getAccountInfo(ata)
-        if (ataAccountMAybe) {
+        if (!ataAccountMAybe) {
           ixs.push(
             createAssociatedTokenAccountInstruction(
               wallet.publicKey,
