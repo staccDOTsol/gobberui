@@ -1,11 +1,11 @@
 import { EpochInfo, PublicKey } from "@solana/web3.js";
-import { ApiV3PoolInfoStandardItemCpmm, ApiV3Token, CpmmKeys } from "@/api/type";
-import { TxVersion } from "@/common/txTool/txType";
+import { ApiV3PoolInfoStandardItemCpmm, ApiV3Token, CpmmKeys } from "tokengobbler";
+import { TxVersion } from "tokengobbler";
 import BN from "bn.js";
-import { ComputeBudgetConfig, GetTransferAmountFee } from "@/raydium/type";
-import { SwapResult } from "./curve/calculator";
-import { Percent } from "@/module";
-import { CpmmPoolInfoLayout } from "./layout";
+import { ComputeBudgetConfig, GetTransferAmountFee } from "tokengobbler";
+import { SwapResult } from "../../app/curve/calculator";
+import { Percent } from "tokengobbler";
+import { CpmmPoolInfoLayout } from "tokengobbler";
 import Decimal from "decimal.js";
 
 export interface CpmmConfigInfoInterface {

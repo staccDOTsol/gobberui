@@ -1,4 +1,4 @@
-import { publicKey, seq, struct, u64, u8, u16, blob, bool } from "@/marshmallow";
+import { publicKey, seq, struct, u64, u8, u16, blob, bool } from "tokengobbler";
 
 export const CpmmConfigInfoLayout = struct([
   blob(8),

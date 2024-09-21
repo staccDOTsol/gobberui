@@ -8,8 +8,8 @@ import { PublicKey } from '@solana/web3.js'
 // @ts-ignore
 import { BN } from 'bn.js'
 import Decimal from 'decimal.js'
-import { makeDepositCpmmInInstruction, makeWithdrawCpmmInInstruction, makeSwapCpmmBaseInInInstruction } from '../../instruction'
-import { getATAAddress, getPdaPoolAuthority, getPdaLpMint, getPdaVault } from '../../pda'
+import { makeDepositCpmmInInstruction, makeWithdrawCpmmInInstruction, makeSwapCpmmBaseInInInstruction } from '../../../components/types/instruction'
+import { getATAAddress, getPdaPoolAuthority, getPdaLpMint, getPdaVault } from '../../../components/types/pda'
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 
 export default function ExplorerPage({ params }: { params: { mint: string } }) {

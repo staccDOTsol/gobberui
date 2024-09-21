@@ -3,13 +3,14 @@ import { InfluxDB, Point } from '@influxdata/influxdb-client'
 import { AMM } from '../../utils/amm'
 import { Connection, PublicKey } from '@solana/web3.js'
 
-const token = process.env.INFLUXDB_TOKEN as string
-const url = process.env.INFLUXDB_URL as string
-const org = process.env.INFLUXDB_ORG as string
-const bucket = 'solana_trades'
+const token = process.env.INFLUXDB_TOKEN || "myinfluxdbtoken";
+const url = process.env.INFLUXDB_URL || "http://influxdb:8086";
+const org = process.env.INFLUXDB_ORG || "myorg";
+const bucket = process.env.INFLUXDB_BUCKET || 'solana_trades'
 
 const influxDB = new InfluxDB({ url, token })
-const connection = new Connection("https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW")
+const connection = new Connection(process.env.GEYSER_ENDPOINT || "https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW")
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     try {
@@ -18,25 +19,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const accountData = (await connection.getAccountInfo((bondingCurve[0])))?.data
       const bondingCurveData = accountData?.slice(8)
 
-      const virtualSolReserves = bondingCurveData?.readBigUInt64LE(0)
-      const virtualTokenReserves = bondingCurveData?.readBigUInt64LE(8)
-      const realSolReserves = bondingCurveData?.readBigUInt64LE(16)
-      const realTokenReserves = bondingCurveData?.readBigUInt64LE(24)
-      const tokenTotalSupply = bondingCurveData?.readBigUInt64LE(32)
-      const complete = bondingCurveData?.readUInt8(40) !== 0
+      if (!bondingCurveData) {
+        throw new Error('Failed to fetch bonding curve data')
+      }
+
+      const virtualSolReserves = bondingCurveData.readBigUInt64LE(0)
+      const virtualTokenReserves = bondingCurveData.readBigUInt64LE(8)
+      const realSolReserves = bondingCurveData.readBigUInt64LE(16)
+      const realTokenReserves = bondingCurveData.readBigUInt64LE(24)
+      const tokenTotalSupply = bondingCurveData.readBigUInt64LE(32)
+      const complete = bondingCurveData.readUInt8(40) !== 0
 
       const amm = new AMM(
-        BigInt(virtualSolReserves!),
-        BigInt(virtualTokenReserves!),
-        BigInt(realSolReserves!),
-        BigInt(realTokenReserves!),
+        virtualSolReserves,
+        virtualTokenReserves,
+        realSolReserves,
+        realTokenReserves,
         BigInt(1000000000000000)
       )
 
       const buyPrice = Number((amm.getBuyPrice(BigInt(1_000_000) * BigInt(10)**BigInt(9))) / BigInt(10)**BigInt(9))
       const sellPrice = Number((amm.getSellPrice(BigInt(1_000_000) * BigInt(10)**BigInt(9))) / BigInt(10)**BigInt(9))
-      console.log("buyPrice", buyPrice)
-      console.log("sellPrice", sellPrice)
+
       const writeApi = influxDB.getWriteApi(org, bucket)
       const point = new Point('trade')
         .tag('mint', mint)

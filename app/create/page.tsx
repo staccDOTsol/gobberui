@@ -14,11 +14,11 @@ import Decimal from 'decimal.js'
 import dayjs from 'dayjs'
 // @ts-ignore
 import BN from 'bn.js'
-import { getATAAddress } from '../pda'
+import { getATAAddress } from '../../components/types/pda'
 import { TOKEN_PROGRAM_ID, NATIVE_MINT } from '@solana/spl-token'
 
 // You'll need to import or define these functions and constants
-import { makeCreateAmmConfig, makeCreateCpmmPoolInInstruction, makeInitializeMetadata } from '../instruction'
+import { makeCreateAmmConfig, makeCreateCpmmPoolInInstruction, makeInitializeMetadata } from '../../components/types/instruction'
 import {  getCreatePoolKeys} from 'tokengobbler'
 import { useRouter } from 'next/navigation'
 const MAX_URI_LENGTH = 200 // Define this constant based on your requirements

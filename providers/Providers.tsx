@@ -18,7 +18,7 @@ export function Providers({ children }: { children: ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const queryEnv = searchParams.get('env');
+  const queryEnv = searchParams?.get('env');
   const [client] = useState(new QueryClient());
   const [env, setEnv] = useState<Env>((queryEnv === 'mainnet' || queryEnv === 'devnet') ? queryEnv : 'mainnet');
   const wallets = useMemo(
