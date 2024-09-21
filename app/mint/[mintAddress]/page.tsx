@@ -8,16 +8,18 @@ import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync,
 import BN from 'bn.js'
 import { CurveLaunchpad } from "../../../components/types/curve_launchpad"
 import * as IDL from "../../../components/types/curve_launchpad.json"
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useParams } from 'next/navigation'
-import { Box, Button, Group, NumberInput, Paper, Title, Text } from '@mantine/core'
-import TradingViewChart from '../../../components/TradingViewChart'
+import { Box, Button, Group, NumberInput, Paper, Title, Text, Select } from '@mantine/core'
 import { AMM } from '../../../utils/amm'
+import dynamic from 'next/dynamic'
+const TradingViewChart = dynamic(() => import('../../../components/TradingViewChart'), { ssr: false })
 
 export default function MintPage() {
   const params = useParams()
   const mintAddress = params?.mintAddress as string
-  const [candlestickData, setCandlestickData] = useState([])
+  const [chartData, setChartData] = useState([])
+
   const { connection } = useConnection()
   const wallet = useAnchorWallet()
   const [amount, setAmount] = useState('')
@@ -221,30 +223,37 @@ export default function MintPage() {
   const [bondingCurveData, setBondingCurveData] = useState<Buffer | null>(null)
   const [timeframe, setTimeframe] = useState('1m')
 
-  const fetchCandlestickData = async () => {
+  const fetchChartData = async () => {
     if (!mintAddress) return
     try {
       const response = await fetch(`/api/candlesticks?mint=${mintAddress}&timeframe=${timeframe}`)
       if (!response.ok) {
-        throw new Error('Failed to fetch candlestick data')
+        throw new Error('Failed to fetch chart data')
       }
       const data = await response.json()
       if (data.length === 0) {
         setError('No data available for the selected timeframe')
       } else {
-        setCandlestickData(data)
+        setChartData(data.map((item: any) => ({
+          time: item.timestamp / 1000, // Convert to seconds for TradingView
+          open: item.open,
+          high: item.high,
+          low: item.low,
+          close: item.close,
+          volume: item.volume || 0
+        })))
       }
     } catch (error) {
-      console.error('Error fetching candlestick data:', error)
+      console.error('Error fetching chart data:', error)
       setError('Failed to fetch chart data. Please try again later.')
-    } finally {
     }
   }
+
   useEffect(() => {
-    fetchCandlestickData()
-    const interval = setInterval(fetchCandlestickData, 600);
-    return () => clearInterval(interval);
-  }, [mintAddress, timeframe, bondingCurveData])
+    fetchChartData()
+    const interval = setInterval(fetchChartData, 600) // Update every minute
+    return () => clearInterval(interval)
+  }, [mintAddress, timeframe])
   useEffect(() => {
     const fetchPrices = async () => {
       if (!mintAddress) return
@@ -288,7 +297,7 @@ export default function MintPage() {
     fetchPrices()
   }, [connection, mintAddress, amount, timeframe])
 
-  if (isLoading || candlestickData.length === 0) {
+  if (isLoading || chartData.length === 0) {
     return <div className="flex items-center justify-center h-screen bg-gray-900 text-white">Loading token data...</div>
   }
 
@@ -297,26 +306,57 @@ export default function MintPage() {
   }
 
   return (
-    <Box className="min-h-screen bg-gray-900 text-white p-8">
-      <Title order={1} className="text-4xl font-bold mb-8 text-center text-green-400">Token Details</Title>
-      {error && <Text color="red">{error}</Text>}
-      {tokenMetadata && (
-        <Box className="mb-8">
-          <Text>Name: {tokenMetadata.name}</Text>
-          <Text>Symbol: {tokenMetadata.symbol}</Text>
-          <Text>Decimals: {tokenMetadata.decimals}</Text>
-          <Text>Supply: {tokenMetadata.supply}</Text>
-          <img width={100} height={100} src={tokenMetadata.image} alt={tokenMetadata.name} />
-          <Text>{tokenMetadata.description}</Text>
+    <Box className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
+      <Title order={1} className="text-2xl md:text-4xl font-bold mb-4 md:mb-8 text-center text-green-400">The Token Gobbler</Title>
+      
+      <Paper className="max-w-4xl mx-auto bg-gray-800 p-4 md:p-8 rounded-lg shadow-lg">
+        <Box className="mb-4 md:mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
+          <Box className="mb-4 md:mb-0">
+            <Text className="mb-2">Token: {tokenMetadata?.name} ({tokenMetadata?.symbol})</Text>
+            <img height={100} width={100} src={tokenMetadata?.image} alt={tokenMetadata?.name} />
+          </Box>
+          <Box className="w-full md:w-auto">
+            <NumberInput
+              value={amount}
+              onChange={(value) => setAmount(value.toString())}
+              placeholder="Amount"
+              className="w-full md:w-48"
+              styles={(theme) => ({
+                input: {
+                  backgroundColor: theme.colors.gray[7],
+                  color: theme.white,
+                  border: `1px solid ${theme.colors.gray[6]}`,
+                  '&:focus': {
+                    borderColor: theme.colors.green[5],
+                  },
+                },
+              })}
+            />
+          </Box>
         </Box>
-      )}
-      <Paper className="max-w-4xl mx-auto bg-gray-800 p-8 rounded-lg shadow-lg">
-        <Box className="mb-8">
-          <NumberInput
-            value={amount}
-            onChange={(value) => setAmount(value.toString())}
-            placeholder="Amount"
-            className="w-full"
+
+        <Group gap="md" grow className="mb-4 md:mb-8">
+          <Button color="green" className="font-semibold" onClick={handleBuy}>Buy</Button>
+          <Button color="red" className="font-semibold" onClick={handleSell}>Sell</Button>
+        </Group>
+
+        <Box className="h-[300px] md:h-[500px] w-full mb-4 md:mb-8">
+          <TradingViewChart data={chartData} />
+        </Box>
+
+        <Box className="flex justify-between items-center mb-4">
+          <Text className="font-semibold text-yellow-400">Gobbler Fee Distribution</Text>
+          <Select
+            value={timeframe}
+            onChange={(value: any) => setTimeframe(value)}
+            data={[
+              { value: '1m', label: '1 Minute' },
+              { value: '5m', label: '5 Minutes' },
+              { value: '15m', label: '15 Minutes' },
+              { value: '1h', label: '1 Hour' },
+              { value: '4h', label: '4 Hours' },
+              { value: '1d', label: '1 Day' },
+            ]}
             styles={(theme) => ({
               input: {
                 backgroundColor: theme.colors.gray[7],
@@ -329,95 +369,8 @@ export default function MintPage() {
             })}
           />
         </Box>
-        <Group gap="md" grow className="mb-8">
-          <Button
-            onClick={handleBuy}
-            disabled={isBuying}
-            color="green"
-            className="font-semibold"
-          >
-            {isBuying ? 'Buying...' : 'Buy'}
-          </Button>
-          <Button
-            onClick={handleSell}
-            disabled={isSelling}
-            color="red"
-            className="font-semibold"
-          >
-            {isSelling ? 'Selling...' : 'Sell'}
-          </Button>
-        </Group>
-        <Box className="mb-4">
-          <Text>Buy Price: {buyPrice !== null ? buyPrice.toFixed(6) : 'Loading...'}</Text>
-          <Text>Sell Price: {sellPrice !== null ? sellPrice.toFixed(6) : 'Loading...'}</Text>
-        </Box>
-       
-        {candlestickData.length > 0 && (
-        <Box className="h-[500px] w-full mb-8">
-          <TradingViewChart symbol={`SOLANA:${mintAddress}/USD`} theme="dark" mintAddress={mintAddress} candlestickData={candlestickData} />
-        </Box>
-        )}
-        <Group gap="md" grow className="mb-4">
-          <Button
-            onClick={() => setTimeframe('1s')}
-            color={timeframe === '1s' ? 'green' : 'gray'}
-            className="font-semibold"
-          >
-            1S
-          </Button>
-          <Button
-            onClick={() => setTimeframe('1m')}
-            color={timeframe === '1m' ? 'green' : 'gray'}
-            className="font-semibold"
-          >
-            1M
-          </Button>
-          <Button
-            onClick={() => setTimeframe('5m')}
-            color={timeframe === '5m' ? 'green' : 'gray'}
-            className="font-semibold"
-          >
-            5M
-          </Button>
-          <Button
-            onClick={() => setTimeframe('15m')}
-            color={timeframe === '15m' ? 'green' : 'gray'}
-            className="font-semibold"
-          >
-            15M
-          </Button>
-          <Button
-            onClick={() => setTimeframe('1h')}
-            color={timeframe === '1h' ? 'green' : 'gray'}
-            className="font-semibold"
-          >
-            1H
-          </Button>
-          <Button
-            onClick={() => setTimeframe('4h')}
-            color={timeframe === '4h' ? 'green' : 'gray'}
-            className="font-semibold"
-          >
-            4H
-          </Button>
-          <Button
-            onClick={() => setTimeframe('1d')}
-            color={timeframe === '1d' ? 'green' : 'gray'}
-            className="font-semibold"
-          >
-            1D
-          </Button>
-        </Group>
-      </Paper> <Box className="mb-4">
-          <Text className="font-semibold text-yellow-400">Gobbler Fee Distribution</Text>
-          <Text>When you buy tokens, you have a chance to receive all transaction fees!</Text>
-          <Text>The more you buy, the higher your chances of winning fees.</Text>
-        </Box>
-        <Box className="mb-4">
-          <Text className="font-semibold text-purple-400">Dynamic Fee Structure</Text>
-          <Text>Fees may vary based on market conditions and user activity.</Text>
-          <Text>Stay active to potentially benefit from lower fees!</Text>
-        </Box>
+        <Text>Buy tokens for a chance to receive all transaction fees!</Text>
+      </Paper>
     </Box>
   )
 }
