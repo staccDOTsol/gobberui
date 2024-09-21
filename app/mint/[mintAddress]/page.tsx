@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { PublicKey, Transaction } from '@solana/web3.js'
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react'
 import { AnchorProvider, Program } from '@coral-xyz/anchor'
-import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token"
+import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token"
 import BN from 'bn.js'
 import { CurveLaunchpad } from "../../../components/types/curve_launchpad"
 import * as IDL from "../../../components/types/curve_launchpad.json"
@@ -45,7 +45,22 @@ export default function MintPage() {
           program: new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9"),
         })
         .instruction()
-      const tx = new Transaction().add(ix)
+        const ixs: any = []
+        const ata = await getAssociatedTokenAddressSync( new PublicKey(mintAddress), wallet.publicKey, true, TOKEN_2022_PROGRAM_ID)
+        const ataAccountMAybe = await connection.getAccountInfo(ata)
+        if (ataAccountMAybe) {
+          ixs.push(
+            createAssociatedTokenAccountInstruction(
+              wallet.publicKey,
+              ata,
+              wallet.publicKey,
+              new PublicKey(mintAddress),
+              TOKEN_2022_PROGRAM_ID
+            )
+          )
+        }
+        ixs.push(ix)
+      const tx = new Transaction().add(...ixs)
       tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
       tx.feePayer = wallet.publicKey
       const signed = await wallet.signTransaction(tx)
