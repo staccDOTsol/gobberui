@@ -306,7 +306,7 @@ export default function MintPage() {
           <Text>Symbol: {tokenMetadata.symbol}</Text>
           <Text>Decimals: {tokenMetadata.decimals}</Text>
           <Text>Supply: {tokenMetadata.supply}</Text>
-          <img src={tokenMetadata.image} alt={tokenMetadata.name} />
+          <img width={100} height={100} src={tokenMetadata.image} alt={tokenMetadata.name} />
           <Text>{tokenMetadata.description}</Text>
         </Box>
       )}
