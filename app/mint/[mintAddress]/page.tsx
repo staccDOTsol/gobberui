@@ -172,7 +172,7 @@ export default function MintPage() {
     if (!program || !wallet || !mintAddress) return
     setIsSelling(true)
     try {
-      const tokenAmount = new BN(parseFloat(amount) * 1e9) // Assuming 9 decimals
+      const tokenAmount = new BN(parseFloat(amount) * 1e6) // Assuming 9 decimals
       const minSolAmount = new BN(0)
       const ix = await program.methods
         .sell(tokenAmount, minSolAmount)
