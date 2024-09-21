@@ -1613,10 +1613,83 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@chakra-ui/icon@npm:3.2.0":
+  version: 3.2.0
+  resolution: "@chakra-ui/icon@npm:3.2.0"
+  dependencies:
+    "@chakra-ui/shared-utils": "npm:2.0.5"
+  peerDependencies:
+    "@chakra-ui/system": ">=2.0.0"
+    react: ">=18"
+  checksum: 0bd5c4b2dafc0adef1c5ffe9a137556a81b7f6f724c406d49740bea34153ba8ce6d8c9eaffa697a3d564d7df7b226cd59a8f0c103853f874543466c2816643b1
+  languageName: node
+  linkType: hard
+
+"@chakra-ui/icons@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "@chakra-ui/icons@npm:2.1.1"
+  dependencies:
+    "@chakra-ui/icon": "npm:3.2.0"
+  peerDependencies:
+    "@chakra-ui/system": ">=2.0.0"
+    react: ">=18"
+  checksum: 36c94df62216f7445e49dfec98363f4c836e154ba118e6c446e774cade6f9e0e04c33a62fbe2ff9de26eb87f6a3ee805f8c7fd2ddc82c8ef2744994443a83b33
+  languageName: node
+  linkType: hard
+
+"@chakra-ui/shared-utils@npm:2.0.5":
+  version: 2.0.5
+  resolution: "@chakra-ui/shared-utils@npm:2.0.5"
+  checksum: d9095a4abb678e382f8fdf882a2e50fde5789267b9bf7165bd06babcbd0afcb0c8c319b78922b7ea9fdbf22659623fa8604cd76bcfec8750304fa4614c73a3f0
+  languageName: node
+  linkType: hard
+
 "@colors/colors@npm:1.5.0":
   version: 1.5.0
   resolution: "@colors/colors@npm:1.5.0"
   checksum: eb42729851adca56d19a08e48d5a1e95efd2a32c55ae0323de8119052be0510d4b7a1611f2abcbf28c044a6c11e6b7d38f99fccdad7429300c37a8ea5fb95b44
+  languageName: node
+  linkType: hard
+
+"@coral-xyz/anchor-errors@npm:^0.30.1":
+  version: 0.30.1
+  resolution: "@coral-xyz/anchor-errors@npm:0.30.1"
+  checksum: cb6749b68c12df54041d1be47df7a7b7f1d4ad2c54759bca7964c22a5dd892de0deb004100ac81cf70278e373d228a99d648013225613b5de85854530c41f501
+  languageName: node
+  linkType: hard
+
+"@coral-xyz/anchor@npm:^0.30.1":
+  version: 0.30.1
+  resolution: "@coral-xyz/anchor@npm:0.30.1"
+  dependencies:
+    "@coral-xyz/anchor-errors": "npm:^0.30.1"
+    "@coral-xyz/borsh": "npm:^0.30.1"
+    "@noble/hashes": "npm:^1.3.1"
+    "@solana/web3.js": "npm:^1.68.0"
+    bn.js: "npm:^5.1.2"
+    bs58: "npm:^4.0.1"
+    buffer-layout: "npm:^1.2.2"
+    camelcase: "npm:^6.3.0"
+    cross-fetch: "npm:^3.1.5"
+    crypto-hash: "npm:^1.3.0"
+    eventemitter3: "npm:^4.0.7"
+    pako: "npm:^2.0.3"
+    snake-case: "npm:^3.0.4"
+    superstruct: "npm:^0.15.4"
+    toml: "npm:^3.0.0"
+  checksum: ed0e5903e72d11884015bd8c21199604f56c20a4570972323133011172677b7dcfa8c7054055d827f914b61ad5b70378343809a83a06f3f6010e9d08707fd4c5
+  languageName: node
+  linkType: hard
+
+"@coral-xyz/borsh@npm:^0.30.1":
+  version: 0.30.1
+  resolution: "@coral-xyz/borsh@npm:0.30.1"
+  dependencies:
+    bn.js: "npm:^5.1.2"
+    buffer-layout: "npm:^1.2.0"
+  peerDependencies:
+    "@solana/web3.js": ^1.68.0
+  checksum: eaad9c59647ba58faecc408a30416f17b0cab56bce907cc54654f7a0b151526954c71cedadce7ed38830b731244d918e87b7c3fb19c56a26c2b140c5ccef27dd
   languageName: node
   linkType: hard
 
@@ -2377,6 +2450,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@floating-ui/core@npm:^1.6.0":
+  version: 1.6.8
+  resolution: "@floating-ui/core@npm:1.6.8"
+  dependencies:
+    "@floating-ui/utils": "npm:^0.2.8"
+  checksum: d6985462aeccae7b55a2d3f40571551c8c42bf820ae0a477fc40ef462e33edc4f3f5b7f11b100de77c9b58ecb581670c5c3f46d0af82b5e30aa185c735257eb9
+  languageName: node
+  linkType: hard
+
+"@floating-ui/dom@npm:^1.0.0":
+  version: 1.6.11
+  resolution: "@floating-ui/dom@npm:1.6.11"
+  dependencies:
+    "@floating-ui/core": "npm:^1.6.0"
+    "@floating-ui/utils": "npm:^0.2.8"
+  checksum: 02ef34a75a515543c772880338eea7b66724997bd5ec7cd58d26b50325709d46d480a306b84e7d5509d734434411a4bcf23af5680c2e461e6e6a8bf45d751df8
+  languageName: node
+  linkType: hard
+
 "@floating-ui/dom@npm:^1.5.4":
   version: 1.5.4
   resolution: "@floating-ui/dom@npm:1.5.4"
@@ -2387,7 +2479,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@floating-ui/react-dom@npm:^2.0.0, @floating-ui/react-dom@npm:^2.0.1":
+"@floating-ui/react-dom@npm:^2.0.0":
   version: 2.0.5
   resolution: "@floating-ui/react-dom@npm:2.0.5"
   dependencies:
@@ -2396,6 +2488,18 @@ __metadata:
     react: ">=16.8.0"
     react-dom: ">=16.8.0"
   checksum: cb72564ea6d6f65161fcc5c04005206e09b17513fded78906a737f01fb1d4aaef550da7109cff4c4373b3d251645ba5a102af116b797456d1e81749ffc05fa67
+  languageName: node
+  linkType: hard
+
+"@floating-ui/react-dom@npm:^2.0.1":
+  version: 2.1.2
+  resolution: "@floating-ui/react-dom@npm:2.1.2"
+  dependencies:
+    "@floating-ui/dom": "npm:^1.0.0"
+  peerDependencies:
+    react: ">=16.8.0"
+    react-dom: ">=16.8.0"
+  checksum: e855131c74e68cab505f7f44f92cd4e2efab1c125796db3116c54c0859323adae4bf697bf292ee83ac77b9335a41ad67852193d7aeace90aa2e1c4a640cafa60
   languageName: node
   linkType: hard
 
@@ -2417,6 +2521,13 @@ __metadata:
   version: 0.2.1
   resolution: "@floating-ui/utils@npm:0.2.1"
   checksum: ee77756712cf5b000c6bacf11992ffb364f3ea2d0d51cc45197a7e646a17aeb86ea4b192c0b42f3fbb29487aee918a565e84f710b8c3645827767f406a6b4cc9
+  languageName: node
+  linkType: hard
+
+"@floating-ui/utils@npm:^0.2.8":
+  version: 0.2.8
+  resolution: "@floating-ui/utils@npm:0.2.8"
+  checksum: a8cee5f17406c900e1c3ef63e3ca89b35e7a2ed645418459a73627b93b7377477fc888081011c6cd177cac45ec2b92a6cab018c14ea140519465498dddd2d3f9
   languageName: node
   linkType: hard
 
@@ -2463,6 +2574,22 @@ __metadata:
   version: 2.0.2
   resolution: "@humanwhocodes/object-schema@npm:2.0.2"
   checksum: 6fd83dc320231d71c4541d0244051df61f301817e9f9da9fd4cb7e44ec8aacbde5958c1665b0c419401ab935114fdf532a6ad5d4e7294b1af2f347dd91a6983f
+  languageName: node
+  linkType: hard
+
+"@influxdata/influxdb-client-apis@npm:^1.35.0":
+  version: 1.35.0
+  resolution: "@influxdata/influxdb-client-apis@npm:1.35.0"
+  peerDependencies:
+    "@influxdata/influxdb-client": "*"
+  checksum: d89cbb9d524b788e4f785001e8b97b2547f77209225d818aed2da4edfcaa7473f2017f8c4790eed481712dda97efbe1e23467f6b4d949b3d5c4983e1f3d8d358
+  languageName: node
+  linkType: hard
+
+"@influxdata/influxdb-client@npm:^1.35.0":
+  version: 1.35.0
+  resolution: "@influxdata/influxdb-client@npm:1.35.0"
+  checksum: 7b55f1e884a307d648d39e0e66059c5b6d2c4a7ede3dade07bd98231db28732069ac40282e4fd4144f593a559b703d938375adf31b518381c305929127c522a3
   languageName: node
   linkType: hard
 
@@ -3023,9 +3150,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mantine/core@npm:^7.3.2":
-  version: 7.4.1
-  resolution: "@mantine/core@npm:7.4.1"
+"@mantine/core@npm:7.3.2":
+  version: 7.3.2
+  resolution: "@mantine/core@npm:7.3.2"
   dependencies:
     "@floating-ui/react": "npm:^0.24.8"
     clsx: "npm:2.0.0"
@@ -3034,10 +3161,10 @@ __metadata:
     react-textarea-autosize: "npm:8.5.3"
     type-fest: "npm:^3.13.1"
   peerDependencies:
-    "@mantine/hooks": 7.4.1
+    "@mantine/hooks": 7.3.2
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: a9ed632fabb61438369284ee8d8afa5fd6edcce34f395e5b455121099e4e579795fb086ee6753c07e23cf9fa14dbc9a1a3b033244ffebbe1e390269470e994ca
+  checksum: 9f4b67345617562e2f59121e75743d3ad1d99c09f3f62f62268e8d5a491d85ca3aedaae59a2c0f928ef67975a84a65dba445a3b1556c42d59129476c34949140
   languageName: node
   linkType: hard
 
@@ -3842,7 +3969,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@noble/hashes@npm:1.5.0, @noble/hashes@npm:^1.4.0, @noble/hashes@npm:~1.5.0":
+"@noble/hashes@npm:1.5.0, @noble/hashes@npm:^1.3.1, @noble/hashes@npm:^1.4.0, @noble/hashes@npm:~1.5.0":
   version: 1.5.0
   resolution: "@noble/hashes@npm:1.5.0"
   checksum: 1b46539695fbfe4477c0822d90c881a04d4fa2921c08c552375b444a48cac9930cb1ee68de0a3c7859e676554d0f3771999716606dc4d8f826e414c11692cdd9
@@ -6077,7 +6204,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/web3.js@npm:^1.17.0, @solana/web3.js@npm:^1.21.0, @solana/web3.js@npm:^1.91.8":
+"@solana/web3.js@npm:^1.17.0, @solana/web3.js@npm:^1.21.0, @solana/web3.js@npm:^1.68.0, @solana/web3.js@npm:^1.91.8":
   version: 1.95.3
   resolution: "@solana/web3.js@npm:1.95.3"
   dependencies:
@@ -8153,6 +8280,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/bn.js@npm:^5.1.6":
+  version: 5.1.6
+  resolution: "@types/bn.js@npm:5.1.6"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 073d383d87afea513a8183ce34af7bc0a7a798d057c7ae651982b7f30dd7d93f33247323bca3ba39f1f6af146b564aff547b15467bdf9fc922796c17e8426bf6
+  languageName: node
+  linkType: hard
+
 "@types/body-parser@npm:*":
   version: 1.19.5
   resolution: "@types/body-parser@npm:1.19.5"
@@ -9920,12 +10056,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aria-hidden@npm:^1.1.1, aria-hidden@npm:^1.2.3":
+"aria-hidden@npm:^1.1.1":
   version: 1.2.3
   resolution: "aria-hidden@npm:1.2.3"
   dependencies:
     tslib: "npm:^2.0.0"
   checksum: 46b07b7273167ad3fc2625f1ecbb43f8e6f73115c66785cbb5dcf1e2508133a43b6419d610c39676ceaeb563239efbd8974d5c0187695db8b3e8c3e11f549c2d
+  languageName: node
+  linkType: hard
+
+"aria-hidden@npm:^1.2.3":
+  version: 1.2.4
+  resolution: "aria-hidden@npm:1.2.4"
+  dependencies:
+    tslib: "npm:^2.0.0"
+  checksum: 8abcab2e1432efc4db415e97cb3959649ddf52c8fc815d7384f43f3d3abf56f1c12852575d00df9a8927f421d7e0712652dd5f8db244ea57634344e29ecfc74a
   languageName: node
   linkType: hard
 
@@ -10920,7 +11065,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"buffer-layout@npm:^1.2.0":
+"buffer-layout@npm:^1.2.0, buffer-layout@npm:^1.2.2":
   version: 1.2.2
   resolution: "buffer-layout@npm:1.2.2"
   checksum: d90d1f622f592553555dd290d0e6dd0bababb2566655d0728812b2667af5a23d795929c38c25f5065252024fa29d75ea54eeb6f469d69814f4ebf614c6672acf
@@ -17196,9 +17341,13 @@ __metadata:
   resolution: "mantine-next-template@workspace:."
   dependencies:
     "@babel/core": "npm:^7.23.2"
+    "@chakra-ui/icons": "npm:^2.1.1"
+    "@coral-xyz/anchor": "npm:^0.30.1"
+    "@influxdata/influxdb-client": "npm:^1.35.0"
+    "@influxdata/influxdb-client-apis": "npm:^1.35.0"
     "@mantine/carousel": "npm:^7.3.2"
     "@mantine/code-highlight": "npm:^7.3.2"
-    "@mantine/core": "npm:^7.3.2"
+    "@mantine/core": "npm:7.3.2"
     "@mantine/dates": "npm:^7.3.2"
     "@mantine/dropzone": "npm:^7.3.2"
     "@mantine/form": "npm:^7.3.2"
@@ -17238,6 +17387,7 @@ __metadata:
     "@tiptap/extension-link": "npm:^2.1.13"
     "@tiptap/react": "npm:^2.1.13"
     "@tiptap/starter-kit": "npm:^2.1.13"
+    "@types/bn.js": "npm:^5.1.6"
     "@types/jest": "npm:^29.5.7"
     "@types/next": "npm:^9.0.0"
     "@types/node": "npm:^20.8.10"
@@ -17247,6 +17397,7 @@ __metadata:
     autoprefixer: "npm:^10.4.20"
     axios: "npm:^1.7.7"
     babel-loader: "npm:^9.1.3"
+    bn.js: "npm:^5.2.1"
     browser-image-size: "npm:^1.1.0"
     compressorjs: "npm:^1.2.1"
     dayjs: "npm:^1.11.10"
@@ -21891,6 +22042,13 @@ __metadata:
   version: 0.14.2
   resolution: "superstruct@npm:0.14.2"
   checksum: e5518f6701524fb8cbae504a84dc9c304bf3fe01616230a5eb4e14af9bfc4e3518b94bfe457e57a5d1b99a2b54f82881b4a39e0b266caa6053f84aa294613b94
+  languageName: node
+  linkType: hard
+
+"superstruct@npm:^0.15.4":
+  version: 0.15.5
+  resolution: "superstruct@npm:0.15.5"
+  checksum: 73ae2043443dcc7868da6e8b4e4895410c79a88e021b514c665161199675ee920d5eadd85bb9dee5a9f515817e62f4b65a67ccb82d29f73259d012afcbcd3ce4
   languageName: node
   linkType: hard
 
