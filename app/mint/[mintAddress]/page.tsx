@@ -293,7 +293,6 @@ export default function MintPage() {
           <Text>Supply: {tokenMetadata.supply}</Text>
           <img src={tokenMetadata.image} alt={tokenMetadata.name} />
           <Text>{tokenMetadata.description}</Text>
-          
         </Box>
       )}
       <Paper className="max-w-4xl mx-auto bg-gray-800 p-8 rounded-lg shadow-lg">
@@ -337,6 +336,7 @@ export default function MintPage() {
           <Text>Buy Price: {buyPrice !== null ? buyPrice.toFixed(6) : 'Loading...'}</Text>
           <Text>Sell Price: {sellPrice !== null ? sellPrice.toFixed(6) : 'Loading...'}</Text>
         </Box>
+       
         {candlestickData.length > 0 && (
         <Box className="h-[500px] w-full mb-8">
           <TradingViewChart symbol={`SOLANA:${mintAddress}/USD`} theme="dark" mintAddress={mintAddress} candlestickData={candlestickData} />
@@ -393,7 +393,16 @@ export default function MintPage() {
             1D
           </Button>
         </Group>
-      </Paper>
+      </Paper> <Box className="mb-4">
+          <Text className="font-semibold text-yellow-400">Gobbler Fee Distribution</Text>
+          <Text>When you buy tokens, you have a chance to receive all transaction fees!</Text>
+          <Text>The more you buy, the higher your chances of winning fees.</Text>
+        </Box>
+        <Box className="mb-4">
+          <Text className="font-semibold text-purple-400">Dynamic Fee Structure</Text>
+          <Text>Fees may vary based on market conditions and user activity.</Text>
+          <Text>Stay active to potentially benefit from lower fees!</Text>
+        </Box>
     </Box>
   )
 }

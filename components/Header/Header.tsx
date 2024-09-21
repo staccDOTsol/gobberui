@@ -37,7 +37,7 @@ export function Header({ env, setEnv }: { env: string; setEnv: (env: Env) => voi
           <Title order={2}>The Token Gobbler</Title>
         </Flex>
         <Group>
-          <HeaderLink label="Create" link="/create" />
+          <HeaderLink label="Create" link="/create2" />
           <WalletMultiButton />
           <Menu trigger="hover" transitionProps={{ exitDuration: 0 }} withinPortal>
             <Menu.Target>
