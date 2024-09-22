@@ -30,6 +30,7 @@ type Greek = {
   mint: string
   lastPrice: number
   volatility: number
+  solBalance?: number
   delta: number
   gamma: number
   theta: number
@@ -83,7 +84,17 @@ export default function GracefulRefreshFinancialGreeksUI() {
           const tokenAccount = await connection.getTokenAccountsByOwner(wallet.publicKey!, { mint: new PublicKey(greek.mint) })
           if (tokenAccount.value.length > 0) {
             const balance = await connection.getTokenAccountBalance(tokenAccount.value[0].pubkey)
-            return { ...greek, balance: parseFloat(balance.value.uiAmount?.toString() || '0') }
+            const userBalance = parseFloat(balance.value.uiAmount?.toString() || '0')
+
+            // Check SOL balance of the bonding curve account
+            const bondingCurveAccount = PublicKey.findProgramAddressSync(
+              [Buffer.from("bonding-curve"), new PublicKey(greek.mint).toBuffer()],
+              new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9")
+            )[0];
+            const solBalance = await connection.getBalance(bondingCurveAccount)
+            const solBalanceInSol = solBalance / LAMPORTS_PER_SOL
+
+            return { ...greek, balance: userBalance, solBalance: solBalanceInSol }
           }
           return greek
         }))
@@ -450,6 +461,14 @@ const tokenBalances = async () => {
           </Badge>
         </CardDescription>
       </CardHeader>
+      <CardContent className="pt-0">
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-400">Total in Curve:</span>
+          <span className="font-medium text-gray-200">
+            {greek.solBalance ? `${greek.solBalance.toFixed(4)} SOL` : 'Loading...'}
+          </span>
+        </div>
+      </CardContent>
       <CardContent>
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="text-gray-400">Last Price:</div>
@@ -576,6 +595,7 @@ const tokenBalances = async () => {
                   <TableHead className="w-[50px] text-gray-300">Select</TableHead>
                   <TableHead className="text-gray-300">Token</TableHead>
                   <TableHead className="text-gray-300">Balance</TableHead>
+                  <TableHead className="text-gray-300">Sol in Curve</TableHead>
                   <TableHead className="cursor-pointer text-gray-300" onClick={() => sortGreeks('lastPrice')}>
                     Last Price <ArrowUpDown className="inline-block ml-1 h-4 w-4" />
                   </TableHead>
@@ -617,6 +637,7 @@ const tokenBalances = async () => {
                       </div>
                     </TableCell>
                     <TableCell className="text-gray-200">{greek.balance?.toFixed(4) || 0}</TableCell>
+                    <TableCell className="text-gray-200">{greek.solBalance ? `${greek.solBalance.toFixed(4)} SOL` : 'Loading...'}</TableCell>
                     <TableCell className="text-gray-200">{formatLamports(greek.lastPrice)} SOL</TableCell>
                     <TableCell className="text-gray-200">{greek.volatility?.toFixed(4) || 0}</TableCell>
                     <TableCell className="text-gray-200">{greek.delta?.toFixed(4)}</TableCell>

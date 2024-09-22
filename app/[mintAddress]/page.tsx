@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { PublicKey, Transaction } from '@solana/web3.js'
+import { LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js'
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react'
 import { AnchorProvider, Program } from '@coral-xyz/anchor'
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token"
@@ -171,6 +171,30 @@ export default function MintPage() {
 
     fetchTokenMetadata();
   }, [mintAddress]);
+  const [bondingCurveBalance, setBondingCurveBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchBondingCurveBalance = async () => {
+      if (!mintAddress || !connection) return;
+
+      try {
+        const bondingCurveAccount = PublicKey.findProgramAddressSync(
+          [Buffer.from("bonding-curve"), new PublicKey(mintAddress).toBuffer()],
+          new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9")
+        )[0];
+
+        const balance = await connection.getBalance(bondingCurveAccount);
+        const balanceInSol = balance / LAMPORTS_PER_SOL;
+
+        setBondingCurveBalance(balanceInSol);
+      } catch (error) {
+        console.error('Error fetching bonding curve balance:', error);
+        setBondingCurveBalance(null);
+      }
+    };
+
+    fetchBondingCurveBalance();
+  }, [mintAddress, connection]);
 
   const handleSell = useCallback(async () => {
     if (!program || !wallet || !mintAddress) return
@@ -322,6 +346,9 @@ export default function MintPage() {
           <Box className="mb-4 md:mb-0">
             <Text className="mb-2">Token: {tokenMetadata?.name} ({tokenMetadata?.symbol})</Text>
             <img height={100} width={100} src={tokenMetadata?.image} alt={tokenMetadata?.name} />
+          </Box>
+          <Box className="mb-4 md:mb-0">
+            <Text className="mb-2">Bonding Curve Balance: {bondingCurveBalance ? `${bondingCurveBalance.toFixed(4)} SOL` : 'N/A'}</Text>
           </Box>
           <Box className="w-full md:w-auto">
             <NumberInput
