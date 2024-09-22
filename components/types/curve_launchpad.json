@@ -204,6 +204,10 @@
           "address": "SysvarRecentB1ockHashes11111111111111111111"
         },
         {
+          "name": "hydra",
+          "writable": true
+        },
+        {
           "name": "event_authority",
           "pda": {
             "seeds": [
@@ -718,9 +722,22 @@
             "Token metadata program"
           ],
           "writable": true
+        },
+        {
+          "name": "create_pool_fee",
+          "writable": true
+        },
+        {
+          "name": "hydra",
+          "writable": true
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "raydium",
+          "type": "bool"
+        }
+      ]
     },
     {
       "name": "sell",
@@ -913,6 +930,10 @@
         },
         {
           "name": "token_program"
+        },
+        {
+          "name": "hydra",
+          "writable": true
         },
         {
           "name": "event_authority",

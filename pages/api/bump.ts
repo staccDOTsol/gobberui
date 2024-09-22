@@ -3,9 +3,9 @@ import { InfluxDB } from '@influxdata/influxdb-client';
 import { useState, useEffect, useCallback } from 'react';
 
 
-const token = "r7f8CQBWFBrUjjfqz_NqOSVs4FFz0cWQ_qzQ_cMwYmCipaRFpRrgBasfFE53mZ045kRF7xs7bvFdPZcf9qKTYQ==";
-const url ="http://localhost:8086";
-const org =  "myorg";
+const token =process.env.INFLUXDB_TOKEN || "r7f8CQBWFBrUjjfqz_NqOSVs4FFz0cWQ_qzQ_cMwYmCipaRFpRrgBasfFE53mZ045kRF7xs7bvFdPZcf9qKTYQ==";
+const url = process.env.INFLUXDB_URL || "http://localhost:8086";
+const org =  process.env.INFLUXDB_ORG || "myorg";
 const bucket = 'solana_trades';
 const metadataCache: { [key: string]: any } = {};
 
