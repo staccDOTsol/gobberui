@@ -20,6 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         |> filter(fn: (r) => r._measurement == "trade")
         |> filter(fn: (r) => r._field == "buyPrice" or r._field == "sellPrice")
         |> group(columns: ["mint"])
+        |> aggregateWindow(every: 1m, fn: last, createEmpty: false)
         |> sort(columns: ["_time"], desc: true)
         |> limit(n: 60, offset: 0)
       `;
@@ -31,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(404).json({ error: 'No data found' });
       }
 
-      const marketOverview =await processMarketData(result);
+      const marketOverview = await processMarketData(result);
 
       res.status(200).json(marketOverview);
     } catch (error:any) {
@@ -48,7 +49,7 @@ async function processMarketData(data: any[]) {
   const entitiesMap = new Map();
 
   for (const trade of data) {
-  const { mint, _time, _value, _field } = trade;
+    const { mint, _time, _value, _field } = trade;
     const mintAddress = mint as string;
     const fetchTokenMetadata = async () => {
         if (!mintAddress) return;
@@ -105,31 +106,23 @@ async function processMarketData(data: any[]) {
         mint,
         lastUpdated: new Date(_time),
         candles: [],
-        currentCandle: null
       });
     }
 
     const entity = entitiesMap.get(mint);
     const timestamp = new Date(_time).getTime();
 
-    if (!entity.currentCandle || timestamp >= entity.currentCandle.timestamp + 60000) {
-      if (entity.currentCandle) {
-        entity.candles.push(entity.currentCandle);
-      }
-      entity.currentCandle = {
-        timestamp: Math.floor(timestamp / 60000) * 60000,
-        open: _value,
-        high: _value,
-        low: _value,
-        close: _value,
-        volume: 0
-      };
-    }
+    // Create a new candle for each data point (minutely candles)
+    const newCandle = {
+      timestamp: Math.floor(timestamp / 60000) * 60000,
+      open: _value,
+      high: _value,
+      low: _value,
+      close: _value,
+      volume: 1
+    };
 
-    entity.currentCandle.high = Math.max(entity.currentCandle.high, _value);
-    entity.currentCandle.low = Math.min(entity.currentCandle.low, _value);
-    entity.currentCandle.close = _value;
-    entity.currentCandle.volume += 1; // Assuming each trade represents a volume of 1
+    entity.candles.push(newCandle);
 
     if (_field === 'buyPrice' || _field === 'sellPrice') {
       entity[_field] = _value;
@@ -139,11 +132,6 @@ async function processMarketData(data: any[]) {
   const marketOverview = Array.from(entitiesMap.values())
     .sort((a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime())
     .map(entity => {
-      if (entity.currentCandle) {
-        entity.candles.push(entity.currentCandle);
-      }
-      delete entity.currentCandle;
-
       // Calculate statistics and Greeks
       const lastPrice = entity.candles[entity.candles.length - 1].close;
       const returns = entity.candles.map((candle: any, index: any, array: any) => 
