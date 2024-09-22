@@ -26,6 +26,7 @@ import * as IDL from '@/components/types/curve_launchpad.json'
 import { AMM } from '@/utils/amm'
 import { BN } from 'bn.js'
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
+import { useRouter } from 'next/navigation'
 type Greek = {
   mint: string
   lastPrice: number
@@ -431,6 +432,10 @@ const tokenBalances = async () => {
   const formatLamports = (lamports: number) => {
     return (lamports / LAMPORTS_PER_SOL).toFixed(9)
   }
+  const router = useRouter();
+  const handleTokenClick = (mint: string) => {
+    router.push(`/${mint}`);
+  };
 
   const MobileGreekCard = ({ greek }: { greek: Greek }) => (
     <Card className="mb-4 bg-gray-800 text-white border border-gray-700">
@@ -445,9 +450,13 @@ const tokenBalances = async () => {
                     {greek.metadata?.symbol?.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <Link href={`/${greek.mint}`} className="text-xl font-semibold text-white hover:underline">
+                <Button
+                  onClick={() => handleTokenClick(greek.mint)}
+                  variant="link"
+                  className="text-xl font-semibold text-white hover:underline p-0"
+                >
                   {greek.metadata?.symbol || greek.mint}
-                </Link>
+                </Button>
               </div>
               <Checkbox
                 checked={selectedTokens.has(greek.mint)}
