@@ -143,8 +143,11 @@ export default function GracefulRefreshFinancialGreeksUI() {
     setSortConfig({ key, direction })
 
     setGreeks(prevGreeks => [...prevGreeks].sort((a: Greek, b: Greek) => {
+      // @ts-ignore
       if (a[key] !== undefined && b[key] !== undefined) {
+        // @ts-ignore
         if (a[key] < b[key]) return direction === 'asc' ? -1 : 1
+        // @ts-ignore
         if (a[key] > b[key]) return direction === 'asc' ? 1 : -1
       }
       return 0
