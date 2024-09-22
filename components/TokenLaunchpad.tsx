@@ -144,7 +144,7 @@ export default function CreateToken() {
       const txSignature = await connection.sendRawTransaction(signed.serialize())
       console.log('Transaction successful:', txSignature)
 
-      router.push(`/mint/${mint.publicKey.toBase58()}`)
+      router.push(`/${mint.publicKey.toBase58()}`)
     } catch (error) {
       console.error('Error creating token:', error)
     } finally {
