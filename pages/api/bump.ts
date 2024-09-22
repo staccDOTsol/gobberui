@@ -7,7 +7,8 @@ const token =process.env.INFLUXDB_TOKEN || "r7f8CQBWFBrUjjfqz_NqOSVs4FFz0cWQ_qzQ
 const url = process.env.INFLUXDB_URL || "http://localhost:8086";
 const org =  process.env.INFLUXDB_ORG || "myorg";
 const bucket = 'solana_trades';
-const metadataCache: { [key: string]: any } = {};
+const metadataCache: { [key: string]: { data: any, timestamp: number } } = {};
+const CACHE_INVALIDATION_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 const influxDB = new InfluxDB({ url, token });
 
@@ -54,9 +55,11 @@ async function processMarketData(data: any[]) {
         if (!mintAddress) return;
       
         // Check if metadata is in cache
-        if (metadataCache[mintAddress as string]) {
-          return(metadataCache[mintAddress as string]);
+        if (metadataCache[mintAddress as string] && 
+            Date.now() - metadataCache[mintAddress as string].timestamp < CACHE_INVALIDATION_TIME) {
+          return metadataCache[mintAddress as string].data;
         }
+      
       
         const url = `https://mainnet.helius-rpc.com/?api-key=0d4b4fd6-c2fc-4f55-b615-a23bab1ffc85`;
         try {
@@ -88,7 +91,10 @@ async function processMarketData(data: any[]) {
             };
             
             // Store in cache
-            metadataCache[mintAddress as string] = metadata;
+            metadataCache[mintAddress as string] = {
+              data: metadata,
+              timestamp: Date.now()
+            };
             
             return(metadata);
           } else {
@@ -97,6 +103,7 @@ async function processMarketData(data: any[]) {
         } catch (error) {
           console.error('Error fetching asset:', error);
         }
+        
     }
     if (!entitiesMap.has(mint)) {
       entitiesMap.set(mint, {

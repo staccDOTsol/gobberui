@@ -138,7 +138,7 @@ export default function GracefulRefreshFinancialGreeksUI() {
           authority: wallet2.publicKey,
           tokenProgram2022: TOKEN_2022_PROGRAM_ID,
           hydra: new PublicKey("AZHP79aixRbsjwNhNeuuVsWD4Gdv1vbYQd8nWKMGZyPZ"),
-          claimer: bribe != null? bribe.lastBriber : PublicKey.default,
+          claimer: bribe != null? bribe.lastBriber : wallet2.publicKey,
         })
         .transaction();
   
