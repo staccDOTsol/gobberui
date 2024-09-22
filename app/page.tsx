@@ -132,7 +132,7 @@ export default function GracefulRefreshFinancialGreeksUI() {
       const tokenUri = metadataResponse.url;
   
       const tx = await program.methods
-        .bribeMetadata(tokenUri, new BN(Number(bribe.amount.toString())*1.02))
+        .bribeMetadata(tokenUri,bribe? new BN(Number(bribe.amount.toString())*1.02) : new BN(1_000_000))
         .accounts({
           mint: new PublicKey(selectedMint),
           authority: wallet2.publicKey,
