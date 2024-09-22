@@ -14,6 +14,99 @@ export type CurveLaunchpad = {
   },
   "instructions": [
     {
+      "name": "bribeMetadata",
+      "discriminator": [
+        104,
+        12,
+        2,
+        9,
+        237,
+        241,
+        40,
+        212
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram2022"
+        },
+        {
+          "name": "mintAuthority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  45,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "hydra",
+          "writable": true
+        },
+        {
+          "name": "bribe",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  98,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "claimer",
+          "writable": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "uri",
+          "type": "string"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "buy",
       "discriminator": [
         102,
@@ -208,6 +301,10 @@ export type CurveLaunchpad = {
         {
           "name": "sysvarRecentSlothashes",
           "address": "SysvarRecentB1ockHashes11111111111111111111"
+        },
+        {
+          "name": "hydra",
+          "writable": true
         },
         {
           "name": "eventAuthority",
@@ -724,6 +821,76 @@ export type CurveLaunchpad = {
             "Token metadata program"
           ],
           "writable": true
+        },
+        {
+          "name": "createPoolFee",
+          "writable": true
+        },
+        {
+          "name": "hydra",
+          "writable": true
+        },
+        {
+          "name": "global"
+        }
+      ],
+      "args": [
+        {
+          "name": "raydium",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "renounceAuthority",
+      "discriminator": [
+        78,
+        110,
+        117,
+        127,
+        89,
+        23,
+        253,
+        153
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram2022"
+        },
+        {
+          "name": "mintAuthority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  45,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
         }
       ],
       "args": []
@@ -919,6 +1086,10 @@ export type CurveLaunchpad = {
         },
         {
           "name": "tokenProgram"
+        },
+        {
+          "name": "hydra",
+          "writable": true
         },
         {
           "name": "eventAuthority",
@@ -1309,6 +1480,19 @@ export type CurveLaunchpad = {
       ]
     },
     {
+      "name": "bribe",
+      "discriminator": [
+        123,
+        25,
+        44,
+        23,
+        111,
+        217,
+        65,
+        73
+      ]
+    },
+    {
       "name": "global",
       "discriminator": [
         167,
@@ -1454,6 +1638,21 @@ export type CurveLaunchpad = {
       "code": 6012,
       "name": "invalidWithdrawAuthority",
       "msg": "Invalid Withdraw Authority"
+    },
+    {
+      "code": 6013,
+      "name": "bribeNotExpired",
+      "msg": "Bribe Not Expired"
+    },
+    {
+      "code": 6014,
+      "name": "notLastBriber",
+      "msg": "Not Last Briber"
+    },
+    {
+      "code": 6015,
+      "name": "bribeOverflow",
+      "msg": "Bribe Overflow"
     }
   ],
   "types": [
@@ -1485,6 +1684,34 @@ export type CurveLaunchpad = {
           {
             "name": "complete",
             "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "bribe",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "lastBriber",
+            "type": "pubkey"
+          },
+          {
+            "name": "pot",
+            "type": "u64"
+          },
+          {
+            "name": "timerStart",
+            "type": "i64"
+          },
+          {
+            "name": "timerEnd",
+            "type": "i64"
           }
         ]
       }

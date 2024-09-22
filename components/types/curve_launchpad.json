@@ -8,6 +8,99 @@
   },
   "instructions": [
     {
+      "name": "bribe_metadata",
+      "discriminator": [
+        104,
+        12,
+        2,
+        9,
+        237,
+        241,
+        40,
+        212
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "token_program_2022"
+        },
+        {
+          "name": "mint_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  45,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "hydra",
+          "writable": true
+        },
+        {
+          "name": "bribe",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  98,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "claimer",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "uri",
+          "type": "string"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "buy",
       "discriminator": [
         102,
@@ -730,6 +823,9 @@
         {
           "name": "hydra",
           "writable": true
+        },
+        {
+          "name": "global"
         }
       ],
       "args": [
@@ -738,6 +834,60 @@
           "type": "bool"
         }
       ]
+    },
+    {
+      "name": "renounce_authority",
+      "discriminator": [
+        78,
+        110,
+        117,
+        127,
+        89,
+        23,
+        253,
+        153
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "token_program_2022"
+        },
+        {
+          "name": "mint_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  45,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
     },
     {
       "name": "sell",
@@ -1324,6 +1474,19 @@
       ]
     },
     {
+      "name": "Bribe",
+      "discriminator": [
+        123,
+        25,
+        44,
+        23,
+        111,
+        217,
+        65,
+        73
+      ]
+    },
+    {
       "name": "Global",
       "discriminator": [
         167,
@@ -1469,6 +1632,21 @@
       "code": 6012,
       "name": "InvalidWithdrawAuthority",
       "msg": "Invalid Withdraw Authority"
+    },
+    {
+      "code": 6013,
+      "name": "BribeNotExpired",
+      "msg": "Bribe Not Expired"
+    },
+    {
+      "code": 6014,
+      "name": "NotLastBriber",
+      "msg": "Not Last Briber"
+    },
+    {
+      "code": 6015,
+      "name": "BribeOverflow",
+      "msg": "Bribe Overflow"
     }
   ],
   "types": [
@@ -1500,6 +1678,34 @@
           {
             "name": "complete",
             "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Bribe",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "last_briber",
+            "type": "pubkey"
+          },
+          {
+            "name": "pot",
+            "type": "u64"
+          },
+          {
+            "name": "timer_start",
+            "type": "i64"
+          },
+          {
+            "name": "timer_end",
+            "type": "i64"
           }
         ]
       }

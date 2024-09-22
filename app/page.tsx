@@ -27,6 +27,13 @@ import { AMM } from '@/utils/amm'
 import { BN } from 'bn.js'
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
 import { useRouter } from 'next/navigation'
+import { Modal, Button as MantineButton, TextInput, Textarea } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { FileInput } from '@mantine/core';
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
+import { irysUploader } from '@metaplex-foundation/umi-uploader-irys';
+import { mplToolbox } from '@metaplex-foundation/mpl-toolbox';
+import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
 type Greek = {
   mint: string
   lastPrice: number
@@ -41,7 +48,8 @@ type Greek = {
   metadata?: {
     name: string
     symbol: string
-    image: string
+    image: string,
+    description: string
   }
   candles: {
     timestamp: number
@@ -61,11 +69,104 @@ export default function GracefulRefreshFinancialGreeksUI() {
   const [solBalance, setSolBalance] = useState<number>(0)
   const [searchTerm, setSearchTerm] = useState('')
   const [autoRefresh, setAutoRefresh] = useState(false)
-
+  const [opened, { open, close }] = useDisclosure(false);
+  const [selectedMint, setSelectedMint] = useState<string | null>(null);
+  const [newDescription, setNewDescription] = useState('');
+  const [newImage, setNewImage] = useState<File | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   const { connection } = useConnection()
   const wallet = useWallet()
-  const { toast } = useToast()
+  const wallet2 = useAnchorWallet()
 
+  const program = wallet2 ? new Program<CurveLaunchpad>(IDL as any, new AnchorProvider(connection, wallet2, {})) : null
+
+  const { toast } = useToast()
+  const handleUpdateMetadata = useCallback(async () => {
+    if (!selectedMint || !wallet2 ||!wallet2.publicKey || !connection || !program) return;
+  
+    setIsUpdating(true);
+    try {
+      const umi = createUmi(connection.rpcEndpoint)
+        .use(irysUploader())
+        .use(mplToolbox())
+        .use(walletAdapterIdentity(wallet2 as any));
+      const bribeAccount = PublicKey.findProgramAddressSync(
+        [Buffer.from("bribe")],
+        new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9")
+      )[0];
+      let bribe : any | null = null
+      try { 
+       bribe = await program.account.bribe.fetch(bribeAccount);
+      } catch (error) {
+        console.log("bribe", error)
+      }
+      console.log("bribe", bribe)
+      let imageUri = '';
+      if (newImage) {
+        const genericFile = {
+          buffer: new Uint8Array(await newImage.arrayBuffer()),
+          fileName: newImage.name,
+          displayName: newImage.name,
+          uniqueName: `${Date.now()}-${newImage.name}`,
+          contentType: newImage.type,
+          extension: newImage.name.split('.').pop() || '',
+          tags: []
+        };
+        const [uploadedUri] = await umi.uploader.upload([genericFile]);
+        const response = await fetch(uploadedUri);
+        imageUri = response.url;
+      }
+  
+      const selectedGreek = greeks.find(g => g.mint === selectedMint);
+      const metadata = {
+        name: selectedGreek?.metadata?.name || '',
+        symbol: selectedGreek?.metadata?.symbol || '',
+        description: newDescription,
+        image: imageUri || selectedGreek?.metadata?.image || '',
+      };
+  
+      metadata.description += '\n\nThis metadata was updated on fomo3d.fun';
+  
+      const metadataUri = await umi.uploader.uploadJson(metadata);
+      const metadataResponse = await fetch(metadataUri);
+      const tokenUri = metadataResponse.url;
+  
+      const tx = await program.methods
+        .bribeMetadata(tokenUri, new BN(Number(bribe.amount.toString())*1.02))
+        .accounts({
+          mint: new PublicKey(selectedMint),
+          authority: wallet2.publicKey,
+          tokenProgram2022: TOKEN_2022_PROGRAM_ID,
+          hydra: new PublicKey("AZHP79aixRbsjwNhNeuuVsWD4Gdv1vbYQd8nWKMGZyPZ"),
+          claimer: bribe? bribe.lastBriber : wallet.publicKey,
+        })
+        .transaction();
+  
+      tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+      tx.feePayer = wallet2.publicKey;
+  
+      const signed = await wallet2.signTransaction(tx);
+      const txSignature = await connection.sendRawTransaction(signed.serialize());
+      console.log('Metadata update transaction:', txSignature);
+  
+      toast({
+        title: "Metadata Updated",
+        description: "Token metadata has been successfully updated.",
+      });
+  
+      close();
+      fetchGreeks(true);
+    } catch (error) {
+      console.error('Error updating metadata:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update metadata. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [selectedMint, newDescription, newImage, wallet, connection, program, close, toast]);
   const lastFetchTime = useRef<number>(0)
   const cachedGreeks = useRef<Greek[]>([])
 
@@ -189,10 +290,6 @@ export default function GracefulRefreshFinancialGreeksUI() {
       return newSet
     })
   }
-  const wallet2 = useAnchorWallet()
-
-  const program = wallet2 ? new Program<CurveLaunchpad>(IDL as any, new AnchorProvider(connection, wallet2, {})) : null
-
 
   const handleBuy = async () => {
     if (!wallet.publicKey) return
@@ -481,6 +578,17 @@ const tokenBalances = async () => {
         </div>
       </CardContent>
       <CardContent>
+        <Button 
+          variant="ghost" 
+          onClick={() => {
+            setSelectedMint(greek.mint);
+            setNewDescription(greek.metadata?.description || '');
+            open();
+          }} 
+          className="w-full mt-2 text-gray-300 hover:text-white hover:bg-gray-700"
+        >
+          Update Metadata
+        </Button>
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="text-gray-400">Last Price:</div>
           <div className="font-medium text-gray-200">{formatLamports(greek.lastPrice)} SOL</div>
@@ -682,7 +790,27 @@ const tokenBalances = async () => {
             </SheetDescription>
           </SheetHeader>
         </SheetContent>
-      </Sheet>
+      </Sheet><Modal opened={opened} onClose={close} title="Update Token Metadata">
+  <Textarea
+    label="New Description"
+    value={newDescription}
+    onChange={(event) => setNewDescription(event.currentTarget.value)}
+    minRows={3}
+  />
+  <FileInput
+    label="New Image"
+    placeholder="Choose file"
+    accept="image/*"
+onChange={(e) => {
+  const file = e || null;
+  setNewImage(file);
+}}
+mt="md"
+  />
+  <MantineButton onClick={handleUpdateMetadata} loading={isUpdating} fullWidth mt="xl">
+    {isUpdating ? 'Updating...' : 'Update Metadata'}
+  </MantineButton>
+</Modal>
     </div>
   )
 }
