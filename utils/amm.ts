@@ -63,4 +63,51 @@ export class AMM {
         const sol_received = (this.virtualSolReserves * token_sell_proportion) / scaling_factor;
         return sol_received < this.realSolReserves ? sol_received : this.realSolReserves;
     }
+
+    getBuyTokensForSol(sol_amount: bigint): bigint {
+        const productOfReserves = this.virtualSolReserves * this.virtualTokenReserves;
+        const newVirtualSolReserves = this.virtualSolReserves + sol_amount;
+        const newVirtualTokenReserves = productOfReserves / newVirtualSolReserves;
+        const tokensReceived = this.virtualTokenReserves - newVirtualTokenReserves;
+        return tokensReceived < this.realTokenReserves ? tokensReceived : this.realTokenReserves;
+    }
+
+    applyBuyWithSol(sol_amount: bigint): BuyResult {
+        const token_amount = this.getBuyTokensForSol(sol_amount);
+        const final_sol_amount = this.getBuyPrice(token_amount);
+
+        this.virtualTokenReserves = this.virtualTokenReserves - token_amount;
+        this.realTokenReserves = this.realTokenReserves - token_amount;
+
+        this.virtualSolReserves = this.virtualSolReserves + final_sol_amount;
+        this.realSolReserves = this.realSolReserves + final_sol_amount;
+
+        return {
+            token_amount: token_amount,
+            sol_amount: final_sol_amount
+        }
+    }
+
+    getSellTokensForSol(sol_amount: bigint): bigint {
+        const scaling_factor = this.initialVirtualTokenReserves;
+        const sol_sell_proportion = (sol_amount * scaling_factor) / this.virtualSolReserves;
+        const tokens_received = (this.virtualTokenReserves * sol_sell_proportion) / scaling_factor;
+        return tokens_received;
+    }
+
+    applySellForSol(sol_amount: bigint): SellResult {
+        const token_amount = this.getSellTokensForSol(sol_amount);
+        const final_sol_amount = sol_amount < this.realSolReserves ? sol_amount : this.realSolReserves;
+
+        this.virtualTokenReserves = this.virtualTokenReserves + token_amount;
+        this.realTokenReserves = this.realTokenReserves + token_amount;
+
+        this.virtualSolReserves = this.virtualSolReserves - final_sol_amount;
+        this.realSolReserves = this.realSolReserves - final_sol_amount;
+
+        return {
+            token_amount: token_amount,
+            sol_amount: final_sol_amount
+        }
+    }
 }
