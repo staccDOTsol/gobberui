@@ -121,7 +121,7 @@ export default function GracefulRefreshFinancialGreeksUI() {
       const metadata = {
         name: selectedGreek?.metadata?.name || '',
         symbol: selectedGreek?.metadata?.symbol || '',
-        description: "This token was updated on fomo4d.fun for " + (bribe? new BN(Number(bribe.amount.toString())*1.02).toString() : new BN(1_000_000)).toString() + " sol! " + newDescription,
+        description: "This token was updated on fomo4d.fun for " + (bribe != null? new BN(Number(bribe.amount.toString())*1.02).toString() : new BN(1_000_000)).toString() + " sol! " + newDescription,
         image: imageUri || selectedGreek?.metadata?.image || '',
       };
   
@@ -132,13 +132,13 @@ export default function GracefulRefreshFinancialGreeksUI() {
       const tokenUri = metadataResponse.url;
   
       const tx = await program.methods
-        .bribeMetadata(tokenUri,bribe? new BN(Number(bribe.amount.toString())*1.02) : new BN(1_000_000))
+        .bribeMetadata(tokenUri,bribe != null? new BN(Number(bribe.amount.toString())*1.02) : new BN(1_000_000))
         .accounts({
           mint: new PublicKey(selectedMint),
           authority: wallet2.publicKey,
           tokenProgram2022: TOKEN_2022_PROGRAM_ID,
           hydra: new PublicKey("AZHP79aixRbsjwNhNeuuVsWD4Gdv1vbYQd8nWKMGZyPZ"),
-          claimer: bribe? bribe.lastBriber : PublicKey.default,
+          claimer: bribe != null? bribe.lastBriber : PublicKey.default,
         })
         .transaction();
   

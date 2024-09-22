@@ -69,6 +69,10 @@ export type CurveLaunchpad = {
           "writable": true
         },
         {
+          "name": "claimer",
+          "writable": true
+        },
+        {
           "name": "bribe",
           "writable": true,
           "pda": {
@@ -85,10 +89,6 @@ export type CurveLaunchpad = {
               }
             ]
           }
-        },
-        {
-          "name": "claimer",
-          "writable": true
         },
         {
           "name": "systemProgram",

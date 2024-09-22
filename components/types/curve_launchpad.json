@@ -63,6 +63,10 @@
           "writable": true
         },
         {
+          "name": "claimer",
+          "writable": true
+        },
+        {
           "name": "bribe",
           "writable": true,
           "pda": {
@@ -79,10 +83,6 @@
               }
             ]
           }
-        },
-        {
-          "name": "claimer",
-          "writable": true
         },
         {
           "name": "system_program",
