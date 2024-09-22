@@ -3,6 +3,7 @@ import React from 'react';
 import { MantineProvider, ColorSchemeScript } from '@mantine/core';
 import { NavigationProgress } from '@mantine/nprogress';
 import { Press_Start_2P } from 'next/font/google';
+import '../globals.css'
 
 import { theme } from '../theme';
 
