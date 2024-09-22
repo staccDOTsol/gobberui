@@ -41,6 +41,8 @@ export default function MintPage() {
       const ix = await program.methods
         .buy(tokenAmount, maxSolAmount)
         .accounts({
+          // @ts-ignore
+          hydra: new PublicKey("AZHP79aixRbsjwNhNeuuVsWD4Gdv1vbYQd8nWKMGZyPZ"),
           user: wallet.publicKey,
           mint: new PublicKey(mintAddress),
           tokenProgram: TOKEN_2022_PROGRAM_ID,
@@ -180,6 +182,8 @@ export default function MintPage() {
         .sell(tokenAmount, minSolAmount)
         .accounts({
           user: wallet.publicKey,
+          // @ts-ignore
+          hydra: new PublicKey("AZHP79aixRbsjwNhNeuuVsWD4Gdv1vbYQd8nWKMGZyPZ"),
           mint: new PublicKey(mintAddress),
           tokenProgram: TOKEN_2022_PROGRAM_ID,
           program: new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9"),
