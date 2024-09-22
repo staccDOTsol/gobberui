@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ArrowUpDown, RefreshCcw, ChevronDown, ChevronUp, Menu, Search } from 'lucide-react'
+import { ArrowUpDown, RefreshCcw, ChevronDown, ChevronUp, Menu, Search, Link } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -445,7 +445,9 @@ const tokenBalances = async () => {
                     {greek.metadata?.symbol?.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-xl font-semibold text-white">{greek.metadata?.symbol || greek.mint}</span>
+                <Link href={`/${greek.mint}`} className="text-xl font-semibold text-white hover:underline">
+                  {greek.metadata?.symbol || greek.mint}
+                </Link>
               </div>
               <Checkbox
                 checked={selectedTokens.has(greek.mint)}
@@ -637,7 +639,7 @@ const tokenBalances = async () => {
                       </div>
                     </TableCell>
                     <TableCell className="text-gray-200">{greek.balance?.toFixed(4) || 0}</TableCell>
-                    <TableCell className="text-gray-200">{greek.solBalance ? `${greek.solBalance.toFixed(4)} SOL` : 'Loading...'}</TableCell>
+                  <TableCell className="text-gray-200">{greek.solBalance ? `${greek.solBalance.toFixed(4)} SOL` : 'Loading...'}</TableCell>
                     <TableCell className="text-gray-200">{formatLamports(greek.lastPrice)} SOL</TableCell>
                     <TableCell className="text-gray-200">{greek.volatility?.toFixed(4) || 0}</TableCell>
                     <TableCell className="text-gray-200">{greek.delta?.toFixed(4)}</TableCell>
