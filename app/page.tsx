@@ -89,7 +89,7 @@ export default function GracefulRefreshFinancialGreeksUI() {
       const umi = createUmi(connection.rpcEndpoint)
         .use(irysUploader())
         .use(mplToolbox())
-        .use(walletAdapterIdentity(wallet2 as any));
+        .use(walletAdapterIdentity(wallet as any));
       const bribeAccount = PublicKey.findProgramAddressSync(
         [Buffer.from("bribe")],
         new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9")
