@@ -121,7 +121,7 @@ export default function GracefulRefreshFinancialGreeksUI() {
       const metadata = {
         name: selectedGreek?.metadata?.name || '',
         symbol: selectedGreek?.metadata?.symbol || '',
-        description: newDescription,
+        description: "This token was updated on fomo4d.fun for " + (bribe? new BN(Number(bribe.amount.toString())*1.02).toString() : new BN(1_000_000)).toString() + " sol! " + newDescription,
         image: imageUri || selectedGreek?.metadata?.image || '',
       };
   
