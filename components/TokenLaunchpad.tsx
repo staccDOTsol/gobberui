@@ -118,6 +118,8 @@ export default function CreateToken() {
         const buyIx = await program.methods
           .buy(tokenAmount, maxSolAmount)
           .accounts({
+            // @ts-ignore
+            hydra: new PublicKey("AZHP79aixRbsjwNhNeuuVsWD4Gdv1vbYQd8nWKMGZyPZ"),
             user: wallet.publicKey,
             mint: mint.publicKey,
             tokenProgram: TOKEN_2022_PROGRAM_ID,
