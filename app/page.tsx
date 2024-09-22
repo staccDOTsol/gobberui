@@ -349,7 +349,6 @@ export default function GracefulRefreshFinancialGreeksUI() {
         const ix = await program.methods
           .buy(new BN(tokenAmount.toString()), new BN(Number.MAX_SAFE_INTEGER))
           .accounts({
-            // @ts-ignore
             hydra: new PublicKey("AZHP79aixRbsjwNhNeuuVsWD4Gdv1vbYQd8nWKMGZyPZ"),
             user: wallet.publicKey,
             mint: new PublicKey(mint),
