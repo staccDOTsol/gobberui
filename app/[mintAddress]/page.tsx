@@ -6,14 +6,14 @@ import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react'
 import { AnchorProvider, Program } from '@coral-xyz/anchor'
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token"
 import BN from 'bn.js'
-import { CurveLaunchpad } from "../../../components/types/curve_launchpad"
-import * as IDL from "../../../components/types/curve_launchpad.json"
+import { CurveLaunchpad } from "../../components/types/curve_launchpad"
+import * as IDL from "../../components/types/curve_launchpad.json"
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useParams } from 'next/navigation'
 import { Box, Button, Group, NumberInput, Paper, Title, Text, Select } from '@mantine/core'
-import { AMM } from '../../../utils/amm'
+import { AMM } from '../../utils/amm'
 import dynamic from 'next/dynamic'
-const TradingViewChart = dynamic(() => import('../../../components/TradingViewChart'), { ssr: false })
+const TradingViewChart = dynamic(() => import('../../components/TradingViewChart'), { ssr: false })
 
 export default function MintPage() {
   const params = useParams()
