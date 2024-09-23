@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { ArrowUpDown, RefreshCcw, ChevronDown, ChevronUp, Menu, Search, Link } from 'lucide-react'
 import { Button } from "@/components/ui/button"
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -10,7 +11,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { useAnchorWallet, useConnection, useWallet } from '@solana/wallet-adapter-react'
-import { LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js'
+import { LAMPORTS_PER_SOL, PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY, SYSVAR_RENT_PUBKEY, Transaction } from '@solana/web3.js'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
@@ -18,6 +19,7 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Label } from "@/components/ui/label"
+
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useToast } from '@/hooks/use-toast'
 import { AnchorProvider, Program } from '@coral-xyz/anchor'
@@ -25,7 +27,7 @@ import { CurveLaunchpad } from '@/components/types/curve_launchpad'
 import * as IDL from '@/components/types/curve_launchpad.json'
 import { AMM } from '@/utils/amm'
 import { BN } from 'bn.js'
-import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
+import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { useRouter } from 'next/navigation'
 import { Modal, Button as MantineButton, TextInput, Textarea } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -34,6 +36,10 @@ import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { irysUploader } from '@metaplex-foundation/umi-uploader-irys';
 import { mplToolbox } from '@metaplex-foundation/mpl-toolbox';
 import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
+import { MEMO_PROGRAM_ID } from 'tokengobbler';
+import { ASSOCIATED_PROGRAM_ID } from '@coral-xyz/anchor/dist/cjs/utils/token';
+import { getAmmConfigAddress, getAuthAddress, getOrcleAccountAddress, getPoolAddress, getPoolLpMintAddress, getPoolVaultAddress } from '@/components/types/raydium'
+import { ApiV3PoolInfoStandardItemCpmm, Percent, Raydium } from '@raydium-io/raydium-sdk-v2'
 type Greek = {
   mint: string
   lastPrice: number
@@ -344,10 +350,60 @@ export default function GracefulRefreshFinancialGreeksUI() {
         const buyResult = amm.applyBuyWithSol(amountInLamports)
         const tokenAmount = buyResult.token_amount
         const maxSolAmount = buyResult.sol_amount
-  
-        // Prepare the buy instruction
+        const ammProgramId = new PublicKey("CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C")
+        
+const ammConfig = getAmmConfigAddress(0, ammProgramId)[0];
+
+const wsolMint = NATIVE_MINT;
+const tokenMint = new PublicKey(mint);
+
+const creatorTokenAccount = getAssociatedTokenAddressSync(tokenMint, wallet.publicKey, true, TOKEN_2022_PROGRAM_ID);
+const poolState = getPoolAddress(ammConfig, wsolMint, tokenMint, ammProgramId)[0];
+const ammAuthority = getAuthAddress(ammProgramId)[0];
+const token0Vault = getPoolVaultAddress(poolState, wsolMint, ammProgramId)[0];
+const token1Vault = getPoolVaultAddress(poolState, tokenMint, ammProgramId)[0];
+const observationState = getOrcleAccountAddress(poolState, ammProgramId)[0];
+const lpMint = getPoolLpMintAddress(poolState, ammProgramId)[0];
+const creatorLpToken = getAssociatedTokenAddressSync(lpMint, wallet.publicKey);
+const creatorLpTokenAccountMaybe = await connection.getAccountInfo(creatorLpToken)
+const ixs = []
+if (!creatorLpTokenAccountMaybe) {
+  ixs.push(createAssociatedTokenAccountInstruction(wallet.publicKey, creatorLpToken, wallet.publicKey, lpMint))
+}
+
+const raydium = await Raydium.load({
+  owner: wallet.publicKey,
+  connection,
+  cluster: 'mainnet',
+  disableFeatureCheck: true,
+  disableLoadToken: true,
+  blockhashCommitment: 'finalized',
+  // urlConfigs: {
+  //   BASE_HOST: '<API_HOST>', // api url configs, currently api doesn't support devnet
+  // },
+})
+
+const data = await raydium.api.fetchPoolById({ ids: poolState.toString() })
+const poolInfo = data[0] as ApiV3PoolInfoStandardItemCpmm
+const baseReserve = await connection.getTokenAccountBalance(token0Vault)
+const quoteReserve = await connection.getTokenAccountBalance(token1Vault)
+const computeRes = await raydium.cpmm.computePairAmount({
+  poolInfo,
+  baseReserve: new BN(baseReserve.value.amount.toString()),
+  quoteReserve: new BN(quoteReserve.value.amount.toString()),
+  amount: new BN(tokenAmount.toString()).div(new BN(3)).div(new BN(10**9)).toString(),
+  slippage: new Percent(10, 100),
+  baseIn: false,
+  epochInfo: await raydium.fetchEpochInfo()
+})
+console.log(computeRes.liquidity)
+const global_lp_token = getAssociatedTokenAddressSync(lpMint, PublicKey.findProgramAddressSync([Buffer.from("global")], new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9"))[0], true)
+const global_lp_token_account_maybe = await connection.getAccountInfo(global_lp_token)
+
+// Prepare the buy instruction
         const ix = await program.methods
           .buy(new BN(tokenAmount.toString()), new BN(Number.MAX_SAFE_INTEGER))
+          
           .accounts({
             hydra: new PublicKey("AZHP79aixRbsjwNhNeuuVsWD4Gdv1vbYQd8nWKMGZyPZ"),
             user: wallet.publicKey,
@@ -356,11 +412,14 @@ export default function GracefulRefreshFinancialGreeksUI() {
             program: new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9"),
           })
           .instruction();
+
   
 
         // Prepare transaction
         const tx = new Transaction();
-
+          if (ixs.length > 0) {
+            tx.add(...ixs)
+          }
         // Check if the user has an associated token account for this mint
         const ata = await getAssociatedTokenAddressSync(new PublicKey(mint), wallet.publicKey, true, TOKEN_2022_PROGRAM_ID);
         const ataAccount = await connection.getAccountInfo(ata);
@@ -380,7 +439,50 @@ export default function GracefulRefreshFinancialGreeksUI() {
 
         // Add the buy instruction
         tx.add(ix);
-
+        const ix2 = await program.methods
+          .buy2(new BN(computeRes.liquidity.toString()), new BN(Number(amountInLamports.toString())/3))
+          .accounts({
+            user: wallet.publicKey,
+            mint: new PublicKey(mint),
+            tokenProgram: TOKEN_2022_PROGRAM_ID,
+            program: new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9"),
+          })
+          .remainingAccounts([
+            /*
+        let authority = &mut next_account_info(remaning_accounts)?;
+        let amm_config = &mut next_account_info(remaning_accounts)?;
+        let pool_state = &mut next_account_info(remaning_accounts)?;
+        let input_token_account = &mut next_account_info(remaning_accounts)?;
+        let input_vault = &mut next_account_info(remaning_accounts)?;
+        let output_vault = &mut next_account_info(remaning_accounts)?;
+        let input_token_program =  &mut next_account_info(remaning_accounts)?;
+        let output_token_program = &ctx.accounts.token_program;
+        let input_token_mint = next_account_info(remaning_accounts)?;
+        let observation_state = &mut next_account_info(remaning_accounts)?;
+        let owner_lp_token = &mut next_account_info(remaning_accounts)?;
+        let lp_mint = &mut next_account_info(remaning_accounts)?;
+        let raydium_swap = &mut next_account_info(remaning_accounts)?;
+    */
+            { pubkey: ammAuthority, isWritable: false, isSigner: false },
+            { pubkey: ammConfig, isWritable: false, isSigner: false },
+            { pubkey: poolState, isWritable: true, isSigner: false },
+            { pubkey: getAssociatedTokenAddressSync(NATIVE_MINT, wallet.publicKey, true), isWritable: true, isSigner: false },
+            { pubkey: token0Vault, isWritable: true, isSigner: false },
+            { pubkey: token1Vault, isWritable: true, isSigner: false },
+            { pubkey: TOKEN_PROGRAM_ID, isWritable: false, isSigner: false },
+            { pubkey: wsolMint, isWritable: false, isSigner: false },
+            { pubkey: observationState, isWritable: true, isSigner: false },
+            { pubkey: creatorLpToken, isWritable: true, isSigner: false },
+            { pubkey: lpMint, isWritable: true, isSigner: false },
+            { pubkey: ammProgramId, isWritable: false, isSigner: false },
+            { pubkey: global_lp_token, isWritable: true, isSigner: false },
+            { pubkey: ASSOCIATED_PROGRAM_ID, isWritable: false, isSigner: false },
+          ])
+          .instruction();
+          const poolStateAccountMaybe = await connection.getAccountInfo(poolState)
+        if (poolStateAccountMaybe) {
+          tx.add(ix2)
+        }
         // Set the recent blockhash and fee payer
         tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
         tx.feePayer = wallet.publicKey;
@@ -463,10 +565,74 @@ const tokenBalances = async () => {
         console.log(`Selling ${amountToSell} tokens (${amountPercentage}%) of ${mint}`);
         const tokenAmount = new BN(amountToSell)
         const minSolAmount = new BN(0)
+        
+const ammProgramId = new PublicKey("CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C")
+const ammConfig = getAmmConfigAddress(0, ammProgramId)[0];
+
+const wsolMint = NATIVE_MINT;
+const tokenMint = new PublicKey(mint);
+
+const creatorTokenAccount = getAssociatedTokenAddressSync(tokenMint, wallet.publicKey, true, TOKEN_2022_PROGRAM_ID);
+const poolState = getPoolAddress(ammConfig, wsolMint, tokenMint, ammProgramId)[0];
+const ammAuthority = getAuthAddress(ammProgramId)[0];
+const token0Vault = getPoolVaultAddress(poolState, wsolMint, ammProgramId)[0];
+const token1Vault = getPoolVaultAddress(poolState, tokenMint, ammProgramId)[0];
+const observationState = getOrcleAccountAddress(poolState, ammProgramId)[0];
+const lpMint = getPoolLpMintAddress(poolState, ammProgramId)[0];
+const creatorLpToken = getAssociatedTokenAddressSync(lpMint, wallet.publicKey);
+
+async function getAmmFromBondingCurve(mint: PublicKey) {
+  const bondingCurvePDA = PublicKey.findProgramAddressSync(
+      [Buffer.from("bonding-curve"), mint.toBuffer()],
+      new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9")
+  )[0];
+  
+  let bondingCurveAccount = await program?.account.bondingCurve.fetch(
+      bondingCurvePDA, 'confirmed'
+  );
+  
+  // console.log(`Price:`, bondingCurveAccount.virtualSolReserves.div(bondingCurveAccount.virtualTokenReserves).toNumber());
+  
+  return new AMM(
+      BigInt(bondingCurveAccount?.virtualSolReserves.toString() || "0"  ),
+      BigInt(bondingCurveAccount?.virtualTokenReserves.toString() || "0"),
+      BigInt(bondingCurveAccount?.realSolReserves.toString() || "0"),
+      BigInt(bondingCurveAccount?.realTokenReserves.toString() || "0"),
+      BigInt(1_073_000_000_000_000n),
+  );
+  };
+const amm = await getAmmFromBondingCurve(new PublicKey(mint));
+const raydium = await Raydium.load({
+  owner: wallet.publicKey,
+  connection,
+  cluster: 'mainnet',
+  disableFeatureCheck: true,
+  disableLoadToken: true,
+  blockhashCommitment: 'finalized',
+  // urlConfigs: {
+  //   BASE_HOST: '<API_HOST>', // api url configs, currently api doesn't support devnet
+  // },
+})
+
+const data = await raydium.api.fetchPoolById({ ids: poolState.toString() })
+const poolInfo = data[0] as ApiV3PoolInfoStandardItemCpmm
+const baseReserve = await connection.getTokenAccountBalance(token0Vault)
+const quoteReserve = await connection.getTokenAccountBalance(token1Vault)
+const computeRes = await raydium.cpmm.computePairAmount({
+  poolInfo,
+  baseReserve: new BN(baseReserve.value.amount.toString()),
+  quoteReserve: new BN(quoteReserve.value.amount.toString()),
+  amount: ((tokenAmount.div(new BN(3)).div(new BN(10**9)).toString())),
+  slippage: new Percent(10, 100),
+  baseIn: false,
+  epochInfo: await raydium.fetchEpochInfo()
+})
+
+const global_lp_token = getAssociatedTokenAddressSync(lpMint, PublicKey.findProgramAddressSync([Buffer.from("global")], new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9"))[0], true)
         const ix = await program.methods
-          .sell(tokenAmount, minSolAmount)
+          .sell(tokenAmount, new BN(0))
+        
           .accounts({
-            // @ts-ignore
             hydra: new PublicKey("AZHP79aixRbsjwNhNeuuVsWD4Gdv1vbYQd8nWKMGZyPZ"),
             user: wallet.publicKey,
             mint: new PublicKey(mint),
@@ -474,7 +640,40 @@ const tokenBalances = async () => {
             program: new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9"),
           })
           .instruction()
+          const ix2 = await program.methods
+          .sell2(new BN(computeRes.liquidity.toString()), new BN(tokenAmount.toString()))
+          .remainingAccounts([
+            { pubkey: ammAuthority, isWritable: false, isSigner: false },
+            { pubkey: ammConfig, isWritable: false, isSigner: false },
+            { pubkey: poolState, isWritable: true, isSigner: false },
+            { pubkey: getAssociatedTokenAddressSync(NATIVE_MINT, wallet.publicKey, true), isWritable: true, isSigner: false },
+            { pubkey: token0Vault, isWritable: true, isSigner: false },
+            { pubkey: token1Vault, isWritable: true, isSigner: false },
+            { pubkey: TOKEN_PROGRAM_ID, isWritable: false, isSigner: false },
+            { pubkey: NATIVE_MINT, isWritable: false, isSigner: false },
+            { pubkey: observationState, isWritable: true, isSigner: false },
+            { pubkey: creatorLpToken, isWritable: true, isSigner: false },
+            { pubkey: lpMint, isWritable: true, isSigner: false },
+            { pubkey: ammProgramId, isWritable: false, isSigner: false },
+            { pubkey: MEMO_PROGRAM_ID, isWritable: false, isSigner: false },
+            { pubkey: ASSOCIATED_PROGRAM_ID, isWritable: false, isSigner: false },
+          ])
+          .accounts({
+            user: wallet.publicKey,
+            mint: new PublicKey(mint),
+            tokenProgram: TOKEN_2022_PROGRAM_ID,
+            program: new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9"),
+          })
+          .instruction();
         const tx = new Transaction().add(ix)
+        const poolStateAccountMaybe = await connection.getAccountInfo(poolState)
+        if (poolStateAccountMaybe) {
+          const ataAccountMaybe = await connection.getAccountInfo(getAssociatedTokenAddressSync(NATIVE_MINT, wallet.publicKey, true))
+          if (!ataAccountMaybe) {
+            tx.add(createAssociatedTokenAccountInstruction(wallet.publicKey, getAssociatedTokenAddressSync(NATIVE_MINT, wallet.publicKey, true), wallet.publicKey, NATIVE_MINT))
+          }
+         // tx.add(ix2)
+        }
         tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
         tx.feePayer = wallet.publicKey
         txs.push(tx)
@@ -649,7 +848,7 @@ const tokenBalances = async () => {
             <Slider
               id="amount-percentage"
               min={0}
-              max={100}
+              max={50}
               step={1}
               value={[amountPercentage]}
               onValueChange={(value) => setAmountPercentage(value[0])}
