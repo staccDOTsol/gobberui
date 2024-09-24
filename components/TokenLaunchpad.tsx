@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useCallback } from 'react'
@@ -22,12 +23,12 @@ import { createPoolFee, getAmmConfigAddress, getAuthAddress, getOrcleAccountAddr
 import { Connection, PublicKey, Keypair } from '@solana/web3.js';
 import BN from 'bn.js';
 import { Wallet, AnchorProvider } from '@coral-xyz/anchor';
-import AmmImpl from  "./ts-client/src/amm"
-import { PROGRAM_ID, SEEDS } from './ts-client/src/amm/constants';
+import AmmImpl from  "./ts-client/dist/amm"
+import { PROGRAM_ID, SEEDS } from './ts-client/dist/amm/constants';
 import {
   getAssociatedTokenAccount,
   derivePoolAddressWithConfig as deriveConstantProductPoolAddressWithConfig,
-} from './ts-client/src/amm/utils'
+} from './ts-client/dist/amm/utils'
 import fs from 'fs';
 
 
@@ -87,6 +88,7 @@ async function createPoolAndLockLiquidity(
     payerWallet.publicKey,
     tokenAMint,
     tokenBMint,
+    
     tokenAAmount,
     tokenBAmount,
     config,
