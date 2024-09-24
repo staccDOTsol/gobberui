@@ -169,19 +169,11 @@ export default function ExplorerPage({ params }: { params: { mint: string } }) {
         <Card.Section p="md">
           <div style={{ height: '16rem' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={klineData}>
-                <Line type="monotone" dataKey="close" stroke="#39FF14" strokeWidth={2} dot={false} />
-                <XAxis dataKey="time" stroke="#39FF14" />
-                <YAxis stroke="#39FF14" />
-                <Tooltip 
-                  contentStyle={{ 
-                    background: 'black', 
-                    border: '2px solid #39FF14',
-                    borderRadius: '4px',
-                    color: '#39FF14'
-                  }} 
-                />
-              </LineChart>
+            <iframe
+                  width="100%"
+                  height="600"
+                  src={`https://birdeye.so/tv-widget/${mint}?chain=solana&viewMode=pair&chartInterval=1m&chartType=CANDLE&chartTimezone=Asia%2FSingapore&chartLeftToolbar=show&theme=dark`}
+                ></iframe>
             </ResponsiveContainer>
           </div>
         </Card.Section>

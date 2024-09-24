@@ -25,6 +25,8 @@ import { useToast } from '@/hooks/use-toast'
 import { AnchorProvider, Program } from '@coral-xyz/anchor'
 import { CurveLaunchpad } from '@/components/types/curve_launchpad'
 import * as IDL from '@/components/types/curve_launchpad.json'
+import { CurveLaunchpad as CurveLaunchpad2 } from '@/components/types/curve_launchpad2'
+import * as IDL2 from '@/components/types/curve_launchpad2.json'
 import { AMM } from '@/utils/amm'
 import { BN } from 'bn.js'
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token'
@@ -85,7 +87,7 @@ export default function GracefulRefreshFinancialGreeksUI() {
   const wallet2 = useAnchorWallet()
 
   const program = wallet2 ? new Program<CurveLaunchpad>(IDL as any, new AnchorProvider(connection, wallet2, {})) : null
-
+  const program2 = wallet2 ? new Program<CurveLaunchpad2>(IDL2 as any, new AnchorProvider(connection, wallet2, {})) : null
   const { toast } = useToast()
   const handleUpdateMetadata = useCallback(async () => {
     if (!selectedMint || !wallet2 ||!wallet2.publicKey || !connection || !program) return;
@@ -302,6 +304,7 @@ export default function GracefulRefreshFinancialGreeksUI() {
     setIsBuying(true)
     const txs: Transaction[] = []
     try {
+      
       if (!program) {
         console.error('Program not initialized')
         return
@@ -313,36 +316,41 @@ export default function GracefulRefreshFinancialGreeksUI() {
       for (const mint of selectedTokens) {
         console.log(`Buying ${amountInSol} SOL worth of ${mint}`)
         // Fetch bonding curve data
-        const bondingCurve = PublicKey.findProgramAddressSync(
+        let bondingCurve = PublicKey.findProgramAddressSync(
           [Buffer.from("bonding-curve"), new PublicKey(mint).toBuffer()],
           new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9")
         );
+        try {
         const accountData = (await connection.getAccountInfo(bondingCurve[0]))?.data;
         const bondingCurveData = accountData?.slice(8);
 
         if (!bondingCurveData) {
           console.error(`Failed to fetch bonding curve data for ${mint}`);
-          continue;
         }
 
-        const virtualSolReserves = bondingCurveData.readBigUInt64LE(0);
-        const virtualTokenReserves = bondingCurveData.readBigUInt64LE(8);
-        const realSolReserves = bondingCurveData.readBigUInt64LE(16);
-        const realTokenReserves = bondingCurveData.readBigUInt64LE(24);
+        const virtualSolReserves = bondingCurveData?.readBigUInt64LE(0);
+        const virtualTokenReserves = bondingCurveData?.readBigUInt64LE(8);
+        const realSolReserves = bondingCurveData?.readBigUInt64LE(16);
+        const realTokenReserves = bondingCurveData?.readBigUInt64LE(24);
 
         const ammState = {
-          virtualSolReserves: virtualSolReserves.toString(),
-          virtualTokenReserves: virtualTokenReserves.toString(),
-          realSolReserves: realSolReserves.toString(),
-          realTokenReserves: realTokenReserves.toString(),
-          initialVirtualTokenReserves: virtualTokenReserves.toString(), // Assuming initial is same as current
+          virtualSolReserves: virtualSolReserves?.toString(),
+          virtualTokenReserves: virtualTokenReserves?.toString(),
+          realSolReserves: realSolReserves?.toString(),
+          realTokenReserves: realTokenReserves?.toString(),
+          initialVirtualTokenReserves: virtualTokenReserves?.toString(), // Assuming initial is same as current
         };
         // Fetch the AMM state for this token
         const amm = new AMM(
+          // @ts-ignore
           BigInt(ammState.virtualSolReserves),
+          // @ts-ignore
           BigInt(ammState.virtualTokenReserves),
+          // @ts-ignore
           BigInt(ammState.realSolReserves),
+          // @ts-ignore
           BigInt(ammState.realTokenReserves),
+          // @ts-ignore
           BigInt(ammState.initialVirtualTokenReserves)
         )
   
@@ -505,7 +513,166 @@ const global_lp_token_account_maybe = await connection.getAccountInfo(global_lp_
         } catch (error) {
           console.error('Error hitting /api/trade:', error)
         }
+      } catch (error) {
+        bondingCurve = PublicKey.findProgramAddressSync(
+          [Buffer.from("bonding-curve"), new PublicKey(mint).toBuffer()],
+         program2?.programId as PublicKey
+        );
+        try {
+        const accountData = (await connection.getAccountInfo(bondingCurve[0]))?.data;
+        const bondingCurveData = accountData?.slice(8);
+
+        if (!bondingCurveData) {
+          console.error(`Failed to fetch bonding curve data for ${mint}`);
+        }
+// @ts-ignore
+        const virtualSolReserves = bondingCurveData.readBigUInt64LE(0);
+// @ts-ignore
+        const virtualTokenReserves = bondingCurveData.readBigUInt64LE(8);
+// @ts-ignore
+        const realSolReserves = bondingCurveData.readBigUInt64LE(16);
+// @ts-ignore
+        const realTokenReserves = bondingCurveData.readBigUInt64LE(24);
+
+        const ammState = {
+          virtualSolReserves: virtualSolReserves.toString(),
+          virtualTokenReserves: virtualTokenReserves.toString(),
+          realSolReserves: realSolReserves.toString(),
+          realTokenReserves: realTokenReserves.toString(),
+          initialVirtualTokenReserves: virtualTokenReserves.toString(), // Assuming initial is same as current
+        };
+        // Fetch the AMM state for this token
+        const amm = new AMM(
+          BigInt(ammState.virtualSolReserves),
+          BigInt(ammState.virtualTokenReserves),
+          BigInt(ammState.realSolReserves),
+          BigInt(ammState.realTokenReserves),
+          BigInt(ammState.initialVirtualTokenReserves)
+        )
+  
+        // Calculate the token amount to buy based on the SOL amount
+        const buyResult = amm.applyBuyWithSol(amountInLamports)
+        const tokenAmount = buyResult.token_amount
+        const maxSolAmount = buyResult.sol_amount
+        const ammProgramId = new PublicKey("CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C")
+        
+const ammConfig = getAmmConfigAddress(0, ammProgramId)[0];
+
+const wsolMint = NATIVE_MINT;
+const tokenMint = new PublicKey(mint);
+
+const creatorTokenAccount = getAssociatedTokenAddressSync(tokenMint, wallet.publicKey, true, TOKEN_2022_PROGRAM_ID);
+const poolState = getPoolAddress(ammConfig, wsolMint, tokenMint, ammProgramId)[0];
+const ammAuthority = getAuthAddress(ammProgramId)[0];
+const token0Vault = getPoolVaultAddress(poolState, wsolMint, ammProgramId)[0];
+const token1Vault = getPoolVaultAddress(poolState, tokenMint, ammProgramId)[0];
+const observationState = getOrcleAccountAddress(poolState, ammProgramId)[0];
+const lpMint = getPoolLpMintAddress(poolState, ammProgramId)[0];
+const creatorLpToken = getAssociatedTokenAddressSync(lpMint, wallet.publicKey);
+const creatorLpTokenAccountMaybe = await connection.getAccountInfo(creatorLpToken)
+const ixs = []
+if (!creatorLpTokenAccountMaybe) {
+  ixs.push(createAssociatedTokenAccountInstruction(wallet.publicKey, creatorLpToken, wallet.publicKey, lpMint))
+}
+
+const raydium = await Raydium.load({
+  owner: wallet.publicKey,
+  connection,
+  cluster: 'mainnet',
+  disableFeatureCheck: true,
+  disableLoadToken: true,
+  blockhashCommitment: 'finalized',
+  // urlConfigs: {
+  //   BASE_HOST: '<API_HOST>', // api url configs, currently api doesn't support devnet
+  // },
+})
+
+const data = await raydium.api.fetchPoolById({ ids: poolState.toString() })
+const poolInfo = data[0] as ApiV3PoolInfoStandardItemCpmm
+const baseReserve = await connection.getTokenAccountBalance(token0Vault)
+const quoteReserve = await connection.getTokenAccountBalance(token1Vault)
+const computeRes = await raydium.cpmm.computePairAmount({
+  poolInfo,
+  baseReserve: new BN(baseReserve.value.amount.toString()),
+  quoteReserve: new BN(quoteReserve.value.amount.toString()),
+  amount: new BN(tokenAmount.toString()).div(new BN(3)).div(new BN(10**9)).toString(),
+  slippage: new Percent(10, 100),
+  baseIn: false,
+  epochInfo: await raydium.fetchEpochInfo()
+})
+console.log(computeRes.liquidity)
+const global_lp_token = getAssociatedTokenAddressSync(lpMint, PublicKey.findProgramAddressSync([Buffer.from("global")], new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9"))[0], true)
+const global_lp_token_account_maybe = await connection.getAccountInfo(global_lp_token)
+if (!program2) {
+  console.error('Program2 is not initialized')
+  return
+}
+// Prepare the buy instruction
+        const ix = await program2.methods
+          .buy(new BN(tokenAmount.toString()), new BN(Number.MAX_SAFE_INTEGER))
+          
+          .accounts({
+            feeRecipient: new PublicKey("AZHP79aixRbsjwNhNeuuVsWD4Gdv1vbYQd8nWKMGZyPZ"),
+            user: wallet.publicKey,
+            mint: new PublicKey(mint),
+            program: program2?.programId,
+          })
+          .instruction();
+
+  
+
+        // Prepare transaction
+        const tx = new Transaction();
+          if (ixs.length > 0) {
+            tx.add(...ixs)
+          }
+        // Check if the user has an associated token account for this mint
+        const ata = await getAssociatedTokenAddressSync(new PublicKey(mint), wallet.publicKey, true, TOKEN_2022_PROGRAM_ID);
+        const ataAccount = await connection.getAccountInfo(ata);
+
+        // If the ATA doesn't exist, add an instruction to create it
+        if (!ataAccount) {
+          tx.add(
+            createAssociatedTokenAccountInstruction(
+              wallet.publicKey,
+              ata,
+              wallet.publicKey,
+              new PublicKey(mint),
+              TOKEN_2022_PROGRAM_ID
+            )
+          );
+        }
+
+        // Add the buy instruction
+        tx.add(ix);
+        // Set the recent blockhash and fee payer
+        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+        tx.feePayer = wallet.publicKey;
+        txs.push(tx)
+        console.log('Buy transaction confirmed');
+        try {
+          const tradeResponse = await fetch('/api/trade', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              timestamp: Date.now(),
+              mint: mint,
+            }),
+          })
+          if (!tradeResponse.ok) {
+            console.error('Error hitting /api/trade:', await tradeResponse.text())
+          }
+        } catch (error) {
+          console.error('Error hitting /api/trade:', error)
+        }
+      } catch (error) {
+        console.error('Error buying tokens:', error)
+      } finally {
+        setIsBuying(false)
       }
+    }
       if (wallet.signAllTransactions) {
       const signed = await wallet.signAllTransactions(txs)
       for (const tx of signed) {
@@ -513,12 +680,15 @@ const global_lp_token_account_maybe = await connection.getAccountInfo(global_lp_
           console.log('Buy transaction sent:', txSignature);
         }
       }
-    } catch (error) {
-      console.error('Error buying tokens:', error)
-    } finally {
-      setIsBuying(false)
-    }
   }
+      
+} catch (error) {
+  console.error('Error buying tokens:', error)
+} finally {
+  setIsBuying(false)
+}
+}
+  
 const tokenBalances = async () => {
   if (!wallet.publicKey) return
   const balances = await connection.getParsedTokenAccountsByOwner(wallet.publicKey, { programId: TOKEN_2022_PROGRAM_ID })
@@ -580,7 +750,15 @@ const token1Vault = getPoolVaultAddress(poolState, tokenMint, ammProgramId)[0];
 const observationState = getOrcleAccountAddress(poolState, ammProgramId)[0];
 const lpMint = getPoolLpMintAddress(poolState, ammProgramId)[0];
 const creatorLpToken = getAssociatedTokenAddressSync(lpMint, wallet.publicKey);
-
+let bondingCurve = PublicKey.findProgramAddressSync(
+  [Buffer.from("bonding-curve"), new PublicKey(mint).toBuffer()],
+  new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9")
+);
+try {
+const accountData = (await connection.getAccountInfo(bondingCurve[0]))?.data;
+const bondingCurveData = accountData?.slice(8);
+if (bondingCurveData) {
+  
 async function getAmmFromBondingCurve(mint: PublicKey) {
   const bondingCurvePDA = PublicKey.findProgramAddressSync(
       [Buffer.from("bonding-curve"), mint.toBuffer()],
@@ -670,9 +848,9 @@ const global_lp_token = getAssociatedTokenAddressSync(lpMint, PublicKey.findProg
         if (poolStateAccountMaybe) {
           const ataAccountMaybe = await connection.getAccountInfo(getAssociatedTokenAddressSync(NATIVE_MINT, wallet.publicKey, true))
           if (!ataAccountMaybe) {
-            tx.add(createAssociatedTokenAccountInstruction(wallet.publicKey, getAssociatedTokenAddressSync(NATIVE_MINT, wallet.publicKey, true), wallet.publicKey, NATIVE_MINT))
+         //   tx.add(createAssociatedTokenAccountInstruction(wallet.publicKey, getAssociatedTokenAddressSync(NATIVE_MINT, wallet.publicKey, true), wallet.publicKey, NATIVE_MINT))
           }
-         // tx.add(ix2)
+          //tx.add(ix2)
         }
         tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
         tx.feePayer = wallet.publicKey
@@ -695,7 +873,98 @@ const global_lp_token = getAssociatedTokenAddressSync(lpMint, PublicKey.findProg
         } catch (error) {
           console.error('Error hitting /api/trade:', error)
         }
-      }
+    } else{
+
+      async function getAmmFromBondingCurve(mint: PublicKey) {
+        const bondingCurvePDA = PublicKey.findProgramAddressSync(
+            [Buffer.from("bonding-curve"), mint.toBuffer()],
+            new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9")
+        )[0];
+        
+        let bondingCurveAccount = await program?.account.bondingCurve.fetch(
+            bondingCurvePDA, 'confirmed'
+        );
+        
+        // console.log(`Price:`, bondingCurveAccount.virtualSolReserves.div(bondingCurveAccount.virtualTokenReserves).toNumber());
+        
+        return new AMM(
+            BigInt(bondingCurveAccount?.virtualSolReserves.toString() || "0"  ),
+            BigInt(bondingCurveAccount?.virtualTokenReserves.toString() || "0"),
+            BigInt(bondingCurveAccount?.realSolReserves.toString() || "0"),
+            BigInt(bondingCurveAccount?.realTokenReserves.toString() || "0"),
+            BigInt(1_073_000_000_000_000n),
+        );
+        };
+      const amm = await getAmmFromBondingCurve(new PublicKey(mint));
+      const raydium = await Raydium.load({
+        owner: wallet.publicKey,
+        connection,
+        cluster: 'mainnet',
+        disableFeatureCheck: true,
+        disableLoadToken: true,
+        blockhashCommitment: 'finalized',
+        // urlConfigs: {
+        //   BASE_HOST: '<API_HOST>', // api url configs, currently api doesn't support devnet
+        // },
+      })
+      
+      const data = await raydium.api.fetchPoolById({ ids: poolState.toString() })
+      const poolInfo = data[0] as ApiV3PoolInfoStandardItemCpmm
+      const baseReserve = await connection.getTokenAccountBalance(token0Vault)
+      const quoteReserve = await connection.getTokenAccountBalance(token1Vault)
+      const computeRes = await raydium.cpmm.computePairAmount({
+        poolInfo,
+        baseReserve: new BN(baseReserve.value.amount.toString()),
+        quoteReserve: new BN(quoteReserve.value.amount.toString()),
+        amount: ((tokenAmount.div(new BN(3)).div(new BN(10**9)).toString())),
+        slippage: new Percent(10, 100),
+        baseIn: false,
+        epochInfo: await raydium.fetchEpochInfo()
+      })
+      if (!program2) return
+      const global_lp_token = getAssociatedTokenAddressSync(lpMint, PublicKey.findProgramAddressSync([Buffer.from("global")], new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9"))[0], true)
+              const ix = await program2.methods
+                .sell(tokenAmount, new BN(0))
+              
+                .accounts({
+                  feeRecipient: new PublicKey("AZHP79aixRbsjwNhNeuuVsWD4Gdv1vbYQd8nWKMGZyPZ"),
+                  user: wallet.publicKey,
+                  mint: new PublicKey(mint),
+                  program: program2.programId
+                })
+                .instruction()
+               
+              const tx = new Transaction().add(ix)
+              
+              tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
+              tx.feePayer = wallet.publicKey
+              txs.push(tx)
+              console.log(`Selling ${amountToSell} tokens of ${mint}`)
+              try {
+                const tradeResponse = await fetch('/api/trade', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    timestamp: Date.now(),
+                    mint: mint,
+                  }),
+                })
+                if (!tradeResponse.ok) {
+                  console.error('Error hitting /api/trade:', await tradeResponse.text())
+                }
+              } catch (error) {
+                console.error('Error hitting /api/trade:', error)
+              }
+
+           
+
+              
+    } }catch (error) {
+      console.error('Error selling tokens:', error)
+    }
+  }
       if (wallet.signAllTransactions) {
         const signed = await wallet.signAllTransactions(txs)
         for (const tx of signed) {
@@ -810,25 +1079,13 @@ const global_lp_token = getAssociatedTokenAddressSync(lpMint, PublicKey.findProg
               <div className="text-gray-400">Rho:</div>
               <div className="font-medium text-gray-200">{greek.rho?.toFixed(4)}</div>
             </div>
-            <div className="h-[200px] w-full">
+            <div className="h-[600px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={greek.candles}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" />
-                  <XAxis 
-                    dataKey="timestamp" 
-                    tickFormatter={(unixTime) => new Date(unixTime).toLocaleDateString()}
-                    stroke="#9CA3AF"
-                  />
-                  <YAxis stroke="#9CA3AF" />
-                  <RechartsTooltip
-                    labelFormatter={(label) => new Date(label).toLocaleString()}
-                    formatter={(value) => [`${formatLamports(Number(value))} SOL`, "Price"]}
-                    contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                    labelStyle={{ color: '#D1D5DB' }}
-                    itemStyle={{ color: '#9CA3AF' }}
-                  />
-                  <Line type="monotone" dataKey="close" stroke="#60A5FA" dot={false} />
-                </LineChart>
+                <iframe
+                  width="100%"
+                  height="600"
+                  src={`https://birdeye.so/tv-widget/${greek.mint}?chain=solana&viewMode=pair&chartInterval=1D&chartType=CANDLE&chartTimezone=Asia%2FSingapore&chartLeftToolbar=show&theme=dark`}
+                ></iframe>
               </ResponsiveContainer>
             </div>
           </div>

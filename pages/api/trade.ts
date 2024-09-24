@@ -3,7 +3,7 @@ import { InfluxDB, Point } from '@influxdata/influxdb-client'
 import { AMM } from '../../utils/amm'
 import { Connection, PublicKey } from '@solana/web3.js'
 
-const token = process.env.INFLUXDB_TOKEN || "r7f8CQBWFBrUjjfqz_NqOSVs4FFz0cWQ_qzQ_cMwYmCipaRFpRrgBasfFE53mZ045kRF7xs7bvFdPZcf9qKTYQ==";
+const token = process.env.INFLUXDB_TOKEN || "myinfluxdbtoken";
 const url = "http://localhost:8086";
 const org = "myorg";
 const bucket = 'solana_trades'
@@ -15,10 +15,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     try {
       const { timestamp, mint } = req.body
-      const bondingCurve = PublicKey.findProgramAddressSync([Buffer.from("bonding-curve"), new PublicKey(mint).toBuffer()], new PublicKey("65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9"))
+      const bondingCurve = PublicKey.findProgramAddressSync([Buffer.from("bonding-curve"), new PublicKey(mint).toBuffer()], new PublicKey("Ei1CgRq6SMB8wQScEKeRMGYkyb3YmRTaej1hpHcqAV9r"))
       const accountData = (await connection.getAccountInfo((bondingCurve[0])))?.data
       const bondingCurveData = accountData?.slice(8)
-
+console.log(bondingCurveData, mint,bondingCurve[0].toBase58())
       if (!bondingCurveData) {
         throw new Error('Failed to fetch bonding curve data')
       }

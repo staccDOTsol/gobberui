@@ -677,35 +677,11 @@ console.log(
                   <Card.Section p="md">
                     <div style={{ height: '300px' }}>
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={klineData[poolId] || []}>
-                          <Line 
-                            type="monotone" 
-                            dataKey="close" 
-                            stroke="#39FF14" 
-                            strokeWidth={2} 
-                            dot={false} 
-                          />
-                          <XAxis 
-                            dataKey="time" 
-                            stroke="#39FF14"
-                            tickFormatter={(unixTime) => new Date(unixTime).toLocaleTimeString()}
-                          />
-                          <YAxis 
-                            stroke="#39FF14"
-                            domain={['dataMin', 'dataMax']}
-                            tickFormatter={(value) => value.toFixed(8)}
-                          />
-                          <RechartsTooltip 
-                            contentStyle={{ 
-                              background: 'black', 
-                              border: '2px solid #39FF14',
-                              borderRadius: '4px',
-                              color: '#39FF14'
-                            }}
-                            formatter={(value) => typeof value === 'number' ? value.toFixed(8) : value}
-                            labelFormatter={(label) => new Date(label).toLocaleString()}
-                          />
-                        </LineChart>
+                      <iframe
+                  width="100%"
+                  height="600"
+                  src={`https://birdeye.so/tv-widget/${pools[poolId].lpMint.address}?chain=solana&viewMode=pair&chartInterval=1m&chartType=CANDLE&chartTimezone=Asia%2FSingapore&chartLeftToolbar=show&theme=dark`}
+                ></iframe>
                       </ResponsiveContainer>
                     </div>
                   </Card.Section>
