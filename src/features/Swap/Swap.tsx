@@ -1,4 +1,4 @@
-import { Box, Grid, GridItem, HStack, VStack, Collapse, useDisclosure, Input, useClipboard } from '@chakra-ui/react'
+import { Box, Grid, GridItem, HStack, VStack, Collapse, useDisclosure, Input, useClipboard, Image } from '@chakra-ui/react'
 import { RAYMint, SOLMint } from '@raydium-io/raydium-sdk-v2'
 import { Connection, PublicKey, SystemProgram } from '@solana/web3.js'
 import { useMemo, useState, useRef, useEffect } from 'react'
@@ -239,6 +239,11 @@ export default function Swap() {
       public initialVirtualTokenReserves: bigint,
       public program: Program<any>
     ) {}
+    metadata: {
+      image: string | null
+      name: string | null
+      symbol: string | null
+    } | null = null
     mintPubkey: PublicKey | null = null
     programId: string | null = null
     apiV3Token: ApiV3Token | null = null
@@ -397,25 +402,54 @@ export default function Swap() {
               const klineData = response.data.data.items
               const lastPrice = klineData[klineData.length - 1]?.c
               if (lastPrice !== undefined) {
-                setAmms((prevAmms) => [
-                  ...prevAmms,
-                  Object.assign(
-                    new AMM(
-                      amm.virtualSolReserves,
-                      amm.virtualTokenReserves,
-                      amm.realSolReserves,
-                      amm.realTokenReserves,
-                      amm.initialVirtualTokenReserves,
-                      amm.program
-                    ),
-                    {
-                      key: amm.mintPubkey?.toBase58() + '-' + programId,
-                      mintPubkey: amm.mintPubkey,
-                      programId: amm.programId,
-                      apiV3Token: amm.apiV3Token
-                    }
+                const newAmm = Object.assign(
+                  new AMM(
+                    amm.virtualSolReserves,
+                    amm.virtualTokenReserves,
+                    amm.realSolReserves,
+                    amm.realTokenReserves,
+                    amm.initialVirtualTokenReserves,
+                    amm.program
+                  ),
+                  {
+                    mintPubkey: amm.mintPubkey,
+                    programId: amm.programId,
+                    apiV3Token: amm.apiV3Token
+                  }
+                )
+
+                setAmms((prevAmms) => {
+                  const isDuplicate = prevAmms.some(
+                    (existingAmm) =>
+                      existingAmm.mintPubkey?.toBase58() === newAmm.mintPubkey?.toBase58() && existingAmm.programId === newAmm.programId
                   )
-                ])
+                  if (isDuplicate) {
+                    return prevAmms
+                  } else {
+                    return [...prevAmms, newAmm]
+                  }
+                })
+
+                const options = {
+                  method: 'GET',
+                  headers: {
+                    accept: 'application/json',
+                    'x-chain': 'solana',
+                    'X-API-KEY': '76e4f97ddfa74b42b3e757721f231279'
+                  }
+                }
+
+                fetch(`https://public-api.birdeye.so/defi/token_overview?address=${amm.mintPubkey?.toBase58()}`, options)
+                  .then((response) => response.json())
+                  .then((response) => {
+                    console.log(response)
+                    amm.metadata = {
+                      image: response.logoURI,
+                      name: response.name,
+                      symbol: response.symbol
+                    }
+                  })
+                  .catch((err) => console.error(err))
               }
             } catch (error) {
               console.error('Error fetching kline data:', error)
@@ -587,9 +621,11 @@ export default function Swap() {
                     {/* Doubled height */}
                     <VStack align="flex-start" spacing={2}>
                       <HStack>
-                        <Box>{/* Token icon */}</Box>
+                        <Box>
+                          <Image src={amm.metadata?.image || ''} alt={amm.metadata?.symbol || ''} width="66px" height="66px" />
+                        </Box>
                         <Box fontSize="2xl" fontWeight="bold">
-                          {amm.apiV3Token?.address.slice(0, 4)} / WSOL
+                          {amm.metadata?.symbol} / WSOL
                         </Box>
                       </HStack>
                     </VStack>
