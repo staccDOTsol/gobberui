@@ -621,6 +621,9 @@ export default function Swap() {
                     {/* Doubled height */}
                     <VStack align="flex-start" spacing={2}>
                       <HStack>
+                        <Box fontSize="lg" fontWeight="bold">
+                          {amm.metadata?.name}
+                        </Box>
                         <Box>
                           <Image src={amm.metadata?.image || ''} alt={amm.metadata?.symbol || ''} width="66px" height="66px" />
                         </Box>
