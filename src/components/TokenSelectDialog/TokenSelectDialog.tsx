@@ -1,5 +1,5 @@
 import { useState, useCallback, forwardRef } from 'react'
-import { TokenInfo } from '@raydium-io/raydium-sdk-v2'
+import { ApiV3Token, TokenInfo } from '@raydium-io/raydium-sdk-v2'
 import { useTranslation } from 'react-i18next'
 import { useEvent } from '@/hooks/useEvent'
 import ChevronLeftIcon from '@/icons/misc/ChevronLeftIcon'
@@ -14,6 +14,7 @@ export interface TokenSelectDialogProps {
   isOpen: boolean
   filterFn?: (token: TokenInfo) => boolean
   onClose: () => void
+  customTokens?: ApiV3Token[]
 }
 
 enum PageType {
@@ -23,9 +24,10 @@ enum PageType {
 }
 
 export default forwardRef<TokenListHandles, TokenSelectDialogProps>(function TokenSelectDialog(
-  { onSelectValue, isOpen, filterFn, onClose },
+  { onSelectValue, isOpen, filterFn, onClose, customTokens },
   ref
 ) {
+  console.log('customTokens:', customTokens)
   const { t } = useTranslation()
   const [currentPage, setCurrentPage] = useState<PageType>(PageType.TokenList)
 
@@ -36,9 +38,9 @@ export default forwardRef<TokenListHandles, TokenSelectDialogProps>(function Tok
       case PageType.TokenListSetting:
         return <TokenListSettingContent />
       case PageType.TokenListUnknown:
-        return <TokenListUnknownContent />
+        return <TokenListContent />
       default:
-        return null
+        return <TokenListContent />
     }
   }, [currentPage])
 
@@ -53,10 +55,12 @@ export default forwardRef<TokenListHandles, TokenSelectDialogProps>(function Tok
       <ModalBody display={'flex'} flexDirection={'column'} overflowX="hidden">
         <Box height={['auto', '60vh']} flex={['1', 'unset']}>
           <TokenList
+            customTokens={customTokens}
             ref={ref}
             onOpenTokenList={() => setCurrentPage(PageType.TokenListSetting)}
             onChooseToken={(token) => {
               onSelectValue(token)
+              onClose()
             }}
             isDialogOpen={isOpen}
             filterFn={filterFn}
@@ -65,7 +69,6 @@ export default forwardRef<TokenListHandles, TokenSelectDialogProps>(function Tok
       </ModalBody>
     </>
   )
-
   const TokenListSettingContent = () => (
     <>
       <ModalHeader mx="8px">

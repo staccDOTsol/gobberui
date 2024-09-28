@@ -1,8 +1,8 @@
 import dynamic from 'next/dynamic'
-const CreatePool = dynamic(() => import('@/features/Create/StandardPool'))
+const CreatePage = dynamic(() => import('@/features/Create/StandardPool'))
 
 function CreatePoolPage() {
-  return <CreatePool />
+  return <CreatePage />
 }
 
 export default CreatePoolPage

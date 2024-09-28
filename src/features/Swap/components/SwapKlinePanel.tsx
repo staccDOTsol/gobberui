@@ -46,8 +46,7 @@ export function SwapKlinePanel({
       >
         <GridItem gridArea="name" marginLeft="4px" marginBottom="12px">
           <HStack spacing={2}>
-            <TokenAvatarPair token1={baseToken} token2={quoteToken} />
-            <HStack>
+              <HStack>
               <Text fontSize="20px" fontWeight="500">
                 {baseToken?.symbol} / {quoteToken?.symbol}
               </Text>

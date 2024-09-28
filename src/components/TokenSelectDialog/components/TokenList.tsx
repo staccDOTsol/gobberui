@@ -21,6 +21,7 @@ import useTokenInfo from '@/hooks/token/useTokenInfo'
 import { isValidPublicKey } from '@/utils/publicKey'
 import { formatToRawLocaleStr } from '@/utils/numberish/formatter'
 import useTokenPrice, { TokenPrice } from '@/hooks/token/useTokenPrice'
+import { ApiV3Token } from 'tokengobbler'
 
 const perPage = 30
 
@@ -40,13 +41,39 @@ export default forwardRef<
     isDialogOpen: boolean
     onChooseToken: (token: TokenInfo) => void
     filterFn?: (token: TokenInfo) => boolean
+    customTokens?: ApiV3Token[]
   }
->(function TokenList({ onOpenTokenList, isDialogOpen: isOpen, onChooseToken, filterFn }, ref) {
+>(function TokenList({ onOpenTokenList, isDialogOpen: isOpen, onChooseToken, filterFn, customTokens }, ref) {
+  console.log('customTokens:', customTokens) // Add this line
+
   const { t } = useTranslation()
   const orgTokenList = useTokenStore((s) => s.displayTokenList)
+
+  const customTokenList: TokenInfo[] = useMemo(
+    () => customTokens?.map((t) => ({ ...t, type: 'custom' } as TokenInfo)) || [],
+    [customTokens]
+  )
+  console.log(customTokenList)
+  const combinedTokenList = useMemo(() => [...customTokenList, ...orgTokenList], [customTokenList, orgTokenList])
   const orgTokenMap = useTokenStore((s) => s.tokenMap)
+  const customTokenMap = useMemo(() => new Map(customTokenList.map((t) => [t.address, t])), [customTokenList])
+  const combinedTokenMap = useMemo(() => new Map([...customTokenMap, ...orgTokenMap]), [customTokenMap, orgTokenMap])
   const setExtraTokenListAct = useTokenStore((s) => s.setExtraTokenListAct)
   const unsetExtraTokenListAct = useTokenStore((s) => s.unsetExtraTokenListAct)
+  console.log(customTokenMap)
+  for (const token of customTokenMap.values()) {
+    try {
+      if (orgTokenMap.has(token.address)) {
+        console.log('Token already exists:', token.address)
+        continue
+      }
+      console.log('adding', token.address)
+      setExtraTokenListAct({ token: { ...token, userAdded: true, priority: 0 }, addToStorage: true, update: false })
+    } catch (error) {
+      console.error('Error adding custom token:', error)
+    }
+  }
+
   const [getTokenBalanceUiAmount, tokenAccountMap, tokenAccounts] = useTokenAccountStore((s) => [
     s.getTokenBalanceUiAmount,
     s.tokenAccountMap,
@@ -65,7 +92,7 @@ export default forwardRef<
     setTokenPrice(data)
   }, [data, fetchPriceList])
 
-  const tokenList = useMemo(() => (filterFn ? orgTokenList.filter(filterFn) : orgTokenList), [filterFn, orgTokenList])
+  const tokenList = useMemo(() => combinedTokenList, [combinedTokenList])
   const [filteredList, setFilteredList] = useState<TokenInfo[]>(tokenList)
   const [displayList, setDisplayList] = useState<TokenInfo[]>([])
   const [search, setSearch] = useState('')
@@ -98,22 +125,15 @@ export default forwardRef<
       return -1
     }
     const sortedTokenList = sortItems(tokenList, {
-      sortRules: [
-        // { value: (i) => (i.address === SOLMint || i.address === RAYMint ? i.address : null) },
-        { value: (i) => (i.tags.includes('unknown') ? null : i.symbol.length), compareFn }
-      ]
+      sortRules: [{ value: (i) => (i.tags.includes('unknown') ? null : i.symbol.length), compareFn }]
     })
     const filteredList = search ? filterTokenFn(sortedTokenList, { searchStr: search }) : sortedTokenList
     setDisplayList(filteredList.slice(0, perPage))
     setFilteredList(filteredList)
-  }, [search, tokenList, tokenAccountMap, orgTokenMap, tokenPrice])
+  }, [search, tokenList, tokenAccountMap, combinedTokenMap, tokenPrice])
 
-  const tempSetNewToken = orgTokenMap.get(search)
   const { tokenInfo: newToken } = useTokenInfo({
-    mint:
-      search && (!filteredList.length || (tempSetNewToken?.type === 'unknown' && !tempSetNewToken?.userAdded)) && isValidPublicKey(search)
-        ? search
-        : undefined
+    mint: search && isValidPublicKey(search) ? search : undefined
   })
   const isUnknownNewToken = newToken?.type === 'unknown'
 
@@ -147,14 +167,12 @@ export default forwardRef<
     unsetExtraTokenListAct(token)
   }, [])
 
-  const USDC = useMemo(() => orgTokenMap.get(USDCMint), [orgTokenMap])
-  const SOL = useMemo(() => orgTokenMap.get(SOLMint), [orgTokenMap])
-  const RAY = useMemo(() => orgTokenMap.get(RAYMint), [orgTokenMap])
-  const USDT = useMemo(() => orgTokenMap.get(USDTMint), [orgTokenMap])
+  const USDC = useMemo(() => combinedTokenMap.get(USDCMint), [combinedTokenMap])
+  const SOL = useMemo(() => combinedTokenMap.get(SOLMint), [combinedTokenMap])
+  const RAY = useMemo(() => combinedTokenMap.get(RAYMint), [combinedTokenMap])
+  const USDT = useMemo(() => combinedTokenMap.get(USDTMint), [combinedTokenMap])
 
-  const [usdcDisabled, solDisabled, rayDisabled, usdtDisabled] = filterFn
-    ? [!USDC || !filterFn(USDC), !SOL || !filterFn(SOL), !RAY || !filterFn(RAY), !USDT || !filterFn(USDT)]
-    : [false, false, false, false]
+  const [usdcDisabled, solDisabled, rayDisabled, usdtDisabled] = [false, false, false, false]
 
   const renderTokenItem = useCallback(
     (token: TokenInfo) => (
@@ -368,58 +386,6 @@ function TokenRowItem({
           </Box>
         </Box>
       </Flex>
-      {/* <Grid
-        gridTemplate={`
-          "avatar symbol" auto
-          "avatar name  " auto / auto 1fr
-        `}
-        columnGap={[1, 2]}
-        alignItems="center"
-        cursor="pointer"
-      >
-        <GridItem gridArea="avatar">
-          <TokenAvatar token={token} />
-        </GridItem>
-        <GridItem gridArea="symbol">
-          <Text color={colors.textSecondary}>{token.symbol}</Text>
-        </GridItem>
-        <GridItem gridArea="name">
-          <Text
-            color={colors.textTertiary}
-            maxWidth={'90%'} // handle token is too long
-            overflow={'hidden'}
-            whiteSpace={'nowrap'}
-            textOverflow={'ellipsis'}
-            fontSize="xs"
-          >
-            {token.name}
-          </Text>
-        </GridItem>
-      </Grid>
-
-      <Grid
-        gridTemplate={`
-          "balance" auto
-          "address" auto / auto 
-        `}
-        columnGap={[2, 4]}
-        alignItems="center"
-      >
-        <GridItem gridArea="balance">
-          <Text color={colors.textSecondary} textAlign="right">
-            {balance()}
-          </Text>
-        </GridItem>
-        <GridItem gridArea="address">
-          <AddressChip
-            onClick={(ev) => ev.stopPropagation()}
-            color={colors.textTertiary}
-            canExternalLink
-            fontSize="xs"
-            address={token.address}
-          />
-        </GridItem>
-      </Grid> */}
     </Flex>
   )
 }

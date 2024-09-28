@@ -36,7 +36,7 @@ export default function Initialize() {
   const [inputMint, setInputMint] = useState<string>(PublicKey.default.toBase58())
   const [outputMint, setOutputMint] = useState<string>(RAYMint.toBase58())
   const [baseToken, quoteToken] = [tokenMap.get(inputMint), tokenMap.get(outputMint)]
-  const [poolImage, setPoolImage] = useState<File|undefined>()
+  const [poolImage, setPoolImage] = useState<File | undefined>()
   const [poolSymbol, setPoolSymbol] = useState<string>('')
   const [poolUri, setPoolUri] = useState<string>('')
 
@@ -69,31 +69,19 @@ export default function Initialize() {
       {/* Telegram Handle */}
       <FormControl>
         <FormLabel>{t('create_standard_pool.telegram_handle')}</FormLabel>
-        <Input
-          value={telegramHandle}
-          onChange={handleTelegramChange}
-          placeholder="@username or t.me/username"
-        />
+        <Input value={telegramHandle} onChange={handleTelegramChange} placeholder="@username or t.me/username" />
       </FormControl>
 
       {/* Discord Handle */}
       <FormControl>
         <FormLabel>{t('create_standard_pool.discord_handle')}</FormLabel>
-        <Input
-          value={discordHandle}
-          onChange={handleDiscordChange}
-          placeholder="username#0000"
-        />
+        <Input value={discordHandle} onChange={handleDiscordChange} placeholder="username#0000" />
       </FormControl>
 
       {/* GitHub Handle */}
       <FormControl>
         <FormLabel>{t('create_standard_pool.github_handle')}</FormLabel>
-        <Input
-          value={githubHandle}
-          onChange={handleGithubChange}
-          placeholder="username"
-        />
+        <Input value={githubHandle} onChange={handleGithubChange} placeholder="username" />
       </FormControl>
     </>
   )
@@ -114,21 +102,13 @@ export default function Initialize() {
       {/* Twitter Handle */}
       <FormControl>
         <FormLabel>{t('create_standard_pool.twitter_handle')}</FormLabel>
-        <Input
-          value={twitterHandle}
-          onChange={handleTwitterChange}
-          placeholder="@username"
-        />
+        <Input value={twitterHandle} onChange={handleTwitterChange} placeholder="@username" />
       </FormControl>
 
       {/* Website */}
       <FormControl>
         <FormLabel>{t('create_standard_pool.website')}</FormLabel>
-        <Input
-          value={website}
-          onChange={handleWebsiteChange}
-          placeholder="https://example.com"
-        />
+        <Input value={website} onChange={handleWebsiteChange} placeholder="https://example.com" />
       </FormControl>
     </>
   )
@@ -180,21 +160,19 @@ export default function Initialize() {
   const { connection } = useConnection()
   const wallet = useWallet()
   const umi = useMemo(() => {
-    const u = createUmi(connection)
-      .use(irysUploader())
-      .use(mplToolbox());
+    const u = createUmi(connection).use(irysUploader()).use(mplToolbox())
 
     if (wallet) {
-      return u.use(walletAdapterIdentity(wallet));
+      return u.use(walletAdapterIdentity(wallet))
     }
-    return u;
-  }, [wallet, connection]);
+    return u
+  }, [wallet, connection])
 
-  const onInitializeClick = async() => {
+  const onInitializeClick = async () => {
     if (!poolImage) return
     onLoading()
     const genericFile = {
-      buffer: new Uint8Array( await poolImage.arrayBuffer() ),
+      buffer: new Uint8Array(await poolImage.arrayBuffer()),
       fileName: poolImage.name,
       displayName: poolImage.name,
       uniqueName: `${Date.now()}-${poolImage.name}`,
@@ -207,24 +185,23 @@ export default function Initialize() {
     const imageUri = r.url
 
     const metadata = {
-    name: poolName,
-    symbol: poolSymbol,
-    description: poolDescription,
-    image: imageUri,
-    website,
-    telegram: telegramHandle,
-    discord: discordHandle,
-    github: githubHandle,
-    twitter: twitterHandle,
+      name: poolName,
+      symbol: poolSymbol,
+      description: poolDescription,
+      image: imageUri,
+      website,
+      telegram: telegramHandle,
+      discord: discordHandle,
+      github: githubHandle,
+      twitter: twitterHandle,
 
-    extensions: {
-    website,
-    telegram: telegramHandle,
-    discord: discordHandle,
-    github: githubHandle,
-    twitter: twitterHandle,
-
-    }
+      extensions: {
+        website,
+        telegram: telegramHandle,
+        discord: discordHandle,
+        github: githubHandle,
+        twitter: twitterHandle
+      }
     }
     const firstUri = await umi.uploader.uploadJson(metadata)
     const response = await fetch(firstUri)
@@ -436,19 +413,13 @@ export default function Initialize() {
         {/* Pool Name */}
         <FormControl isRequired>
           <FormLabel>Pool Name</FormLabel>
-          <Input
-            value={poolName}
-            onChange={(e) => setPoolName(e.target.value)}
-          />
+          <Input value={poolName} onChange={(e) => setPoolName(e.target.value)} />
         </FormControl>
 
         {/* Pool Symbol */}
         <FormControl isRequired>
           <FormLabel>Pool Symbol</FormLabel>
-          <Input
-            value={poolSymbol}
-            onChange={(e) => setPoolSymbol(e.target.value)}
-          />
+          <Input value={poolSymbol} onChange={(e) => setPoolSymbol(e.target.value)} />
         </FormControl>
 
         {/* Pool Description */}
@@ -465,71 +436,43 @@ export default function Initialize() {
         {/* Pool Image */}
         <FormControl>
           <FormLabel>Pool Image</FormLabel>
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setPoolImage(e.target.files?.[0])}
-          />
+          <Input type="file" accept="image/*" onChange={(e) => setPoolImage(e.target.files?.[0])} />
         </FormControl>
 
         {/* Pool URI */}
         <FormControl>
           <FormLabel>Pool URI</FormLabel>
-          <Input
-            value={poolUri}
-            onChange={(e) => setPoolUri(e.target.value)}
-            placeholder="https://example.com/pool-info"
-          />
+          <Input value={poolUri} onChange={(e) => setPoolUri(e.target.value)} placeholder="https://example.com/pool-info" />
         </FormControl>
 
         {/* Website */}
         <FormControl>
           <FormLabel>Website</FormLabel>
-          <Input
-            value={website}
-            onChange={handleWebsiteChange}
-            placeholder="https://example.com"
-          />
+          <Input value={website} onChange={handleWebsiteChange} placeholder="https://example.com" />
         </FormControl>
 
         {/* Twitter Handle */}
         <FormControl>
           <FormLabel>Twitter Handle</FormLabel>
-          <Input
-            value={twitterHandle}
-            onChange={handleTwitterChange}
-            placeholder="@username"
-          />
+          <Input value={twitterHandle} onChange={handleTwitterChange} placeholder="@username" />
         </FormControl>
 
         {/* Telegram Handle */}
         <FormControl>
           <FormLabel>Telegram Handle</FormLabel>
-          <Input
-            value={telegramHandle}
-            onChange={handleTelegramChange}
-            placeholder="@username or t.me/username"
-          />
+          <Input value={telegramHandle} onChange={handleTelegramChange} placeholder="@username or t.me/username" />
         </FormControl>
 
         {/* Discord Handle */}
         <FormControl>
           <FormLabel>Discord Handle</FormLabel>
-          <Input
-            value={discordHandle}
-            onChange={handleDiscordChange}
-            placeholder="username#0000"
-          />
+          <Input value={discordHandle} onChange={handleDiscordChange} placeholder="username#0000" />
         </FormControl>
 
         {/* GitHub Handle */}
         <FormControl>
           <FormLabel>GitHub Handle</FormLabel>
-          <Input
-            value={githubHandle}
-            onChange={handleGithubChange}
-            placeholder="username"
-          />
+          <Input value={githubHandle} onChange={handleGithubChange} placeholder="username" />
         </FormControl>
       </Flex>
       <HStack w="full" spacing={4} mt={2}>

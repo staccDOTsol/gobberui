@@ -89,10 +89,10 @@ export default forwardRef(function TokenAvatar(
             const cid = jsonData.image.split('.ipfs.nftstorage.link')[0].split('/').pop()
             proxyUrl = `${ipfsGateway}${cid}`
           } else {
-            proxyUrl = `https://gobbler.fun/cors/${jsonData.image}`
+            proxyUrl = `${jsonData.image}`
           }
           const dataUrl = await fetchImageAsDataUrl(proxyUrl);
-          setQueryUrl(dataUrl || `https://gobbler.fun/cors/${jsonData.image}`);
+          setQueryUrl(dataUrl || `${jsonData.image}`);
         }
       }
     } catch (error) {
@@ -114,7 +114,7 @@ export default forwardRef(function TokenAvatar(
       const cid = uri.split('.ipfs.nftstorage.link')[0].split('/').pop()
       proxyUrl = `${ipfsGateway}${cid}`
     } else {
-      proxyUrl = `https://gobbler.fun/cors/${uri}`
+      proxyUrl = `${uri}`
     }
 
     const response = await fetch(proxyUrl)

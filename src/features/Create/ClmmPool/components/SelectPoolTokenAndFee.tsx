@@ -25,6 +25,7 @@ import { formatToRawLocaleStr } from '@/utils/numberish/formatter'
 type Side = 'token1' | 'token2'
 
 interface Props {
+  customTokens: ApiV3Token[]
   completed: boolean
   isLoading: boolean
   onConfirm: (props: { token1: ApiV3Token; token2: ApiV3Token; ammConfig: ApiClmmConfigInfo }) => void
@@ -69,7 +70,7 @@ const FeeConfigMap = new Map([
   ]
 ])
 
-export default function SelectPoolTokenAndFee({ completed, isLoading, onConfirm, onEdit }: Props) {
+export default function SelectPoolTokenAndFee({ customTokens, completed, isLoading, onConfirm, onEdit }: Props) {
   const { t } = useTranslation()
   const { isOpen, onOpen, onClose } = useDisclosure()
   const clmmFeeConfigs = useClmmStore((s) => s.clmmFeeConfigs)
@@ -86,8 +87,6 @@ export default function SelectPoolTokenAndFee({ completed, isLoading, onConfirm,
     mintList: token1 && token2 ? [token1.address, token2.address] : [],
     timeout: 100
   })
-  const whiteListMap = useTokenStore((s) => s.whiteListMap)
-
   const { data, isLoading: isExistingLoading } = useFetchPoolByMint({
     shouldFetch: !!token1 && !!token2,
     mint1: token1 ? solToWSol(token1.address).toString() : '',
@@ -115,15 +114,6 @@ export default function SelectPoolTokenAndFee({ completed, isLoading, onConfirm,
   const isSelectedExisted = !!currentConfig && new Set(existingPools.values()).has(currentConfig.id)
   useEffect(() => () => setCurrentConfig(undefined), [poolKey, isSelectedExisted])
 
-  useEffect(() => {
-    if (isExistingLoading) return
-    const defaultConfig = Object.values(clmmFeeConfigs || {}).find((c) => c.tradeFeeRate === 2500)
-    if (!new Set(existingPools.values()).has(defaultConfig?.id || '')) {
-      if (defaultConfig) setCurrentConfig(defaultConfig)
-      return
-    }
-  }, [poolKey, existingPools, clmmFeeConfigs, isExistingLoading])
-
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       selectRef.current = e.currentTarget.dataset['side'] as Side
@@ -133,14 +123,6 @@ export default function SelectPoolTokenAndFee({ completed, isLoading, onConfirm,
   )
 
   const handleSelect = useCallback((val: ApiV3Token) => {
-    if (val?.tags.includes('hasFreeze') && !whiteListMap.has(val.address)) {
-      // toastSubject.next({
-      //   title: t('token_selector.token_freeze_warning'),
-      //   description: t('token_selector.token_has_freeze_disable'),
-      //   status: 'warning'
-      // })
-      // return
-    }
     onClose()
     setTokens((preVal) => {
       const anotherSide = selectRef.current === 'token1' ? 'token2' : 'token1'
@@ -159,7 +141,6 @@ export default function SelectPoolTokenAndFee({ completed, isLoading, onConfirm,
     })
   }
   let error = tokens.token1 ? (tokens.token2 ? undefined : 'common.quote_token') : 'common.base_token'
-  error = error || (currentConfig ? undefined : 'field.fee_tier')
 
   if (completed) {
     return (
@@ -179,6 +160,8 @@ export default function SelectPoolTokenAndFee({ completed, isLoading, onConfirm,
       </PanelCard>
     )
   }
+  console.log(customTokens)
+  console.log(tokens)
   return (
     <PanelCard p={[3, 6]}>
       <Text variant="title" mb="4">
@@ -226,76 +209,7 @@ export default function SelectPoolTokenAndFee({ completed, isLoading, onConfirm,
           </Flex>
         </Box>
       </Flex>
-      <TokenSelectDialog onClose={onClose} isOpen={isOpen} filterFn={filterFn} onSelectValue={handleSelect} />
-
-      <Text variant="title" mb="4">
-        {t('field.fee_tier')}
-      </Text>
-      <Flex flexWrap="wrap" justifyContent="space-evenly" gap="2">
-        {Object.values(clmmFeeConfigs).map((config) => {
-          const existed = new Set(existingPools.values()).has(config.id)
-          const Icon = FeeConfigMap.get(config.tradeFeeRate)?.Icon
-          const selected = currentConfig?.id === config.id
-          return (
-            <Flex key={config.id} position="relative" flexDirection="column" w="48%" _hover={{ '.poolExistedTip': { display: 'flex' } }}>
-              <Flex
-                flexDirection="column"
-                gap="1"
-                bg={colors.backgroundDark}
-                rounded="xl"
-                p="10px"
-                borderRadius="10px"
-                textAlign="center"
-                fontSize="sm"
-                position="relative"
-                boxSizing="border-box"
-                onClick={existed ? undefined : () => setCurrentConfig(config)}
-                sx={{
-                  opacity: existed ? '0.5' : '1',
-                  cursor: existed ? 'default' : 'pointer',
-                  border: `1px solid ${selected ? colors.secondary : 'transparent'}`
-                }}
-              >
-                {selected ? <CircleCheck style={{ color: colors.secondary, position: 'absolute', top: '10px', right: '10px' }} /> : null}
-                <Text fontWeight="500">{formatToRawLocaleStr(config.tradeFeeRate / 10000)}%</Text>
-                <Text color={colors.textSecondary}>{config.description}</Text>
-                <Spacer />
-                {Icon ? <Icon width="100%" /> : null}
-              </Flex>
-              {existed ? (
-                <Box
-                  width="35%"
-                  height="35%"
-                  bg={colors.tooltipBg}
-                  borderRadius={10}
-                  className="poolExistedTip"
-                  display="none"
-                  alignSelf={'center'}
-                  justifyContent="center"
-                  alignItems="center"
-                  position="absolute"
-                  top={-2.5}
-                  _after={{
-                    content: `""`,
-                    position: 'absolute',
-                    top: '100%',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    borderWidth: '0.75rem',
-                    borderStyle: 'solid',
-                    borderColor: `${colors.tooltipBg} transparent transparent transparent`
-                  }}
-                >
-                  <Text fontSize="xs" fontWeight="normal" color={colors.textSecondary}>
-                    {t('create_pool.pool_existed')}
-                  </Text>
-                </Box>
-              ) : null}
-            </Flex>
-          )
-        })}
-        {Object.values(clmmFeeConfigs).length % 2 ? <Flex w="48%" /> : null}
-      </Flex>
+      <TokenSelectDialog customTokens={customTokens} onClose={onClose} isOpen={isOpen} filterFn={filterFn} onSelectValue={handleSelect} />
       <ConnectedButton mt="8" isDisabled={!!error || !currentConfig} isLoading={isLoading || isExistingLoading} onClick={handleConfirm}>
         {error ? `${t('common.select')} ${t(error)}` : t('button.continue')}
       </ConnectedButton>

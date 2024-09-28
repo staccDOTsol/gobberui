@@ -264,14 +264,20 @@ export default function CreateClmmPool() {
         <GridItem area="panel">
           <Flex flexDirection="column" gap={3}>
             {needToShowSelectPoolToken && (
-              <SelectPoolToken isLoading={isLoading} completed={step > 0} onConfirm={handleStep1Confirm} onEdit={handleEdit} />
+              <SelectPoolToken
+                isLoading={isLoading}
+                completed={step > 0}
+                onConfirm={handleStep1Confirm}
+                onEdit={handleEdit}
+                customTokens={[]}
+              />
             )}
             {needToShowSetPriceAndRange ? (
               <SetPriceAndRange
                 initState={{
                   currentPrice: createPoolData?.extInfo.mockPoolInfo.price.toString() || currentCreateInfo.current.price,
                   priceRange: [currentCreateInfo.current.priceLower || '', currentCreateInfo.current.priceUpper || ''],
-                  startTime:currentCreateInfo.current.startTime
+                  startTime: currentCreateInfo.current.startTime
                 }}
                 completed={step > 1}
                 token1={currentCreateInfo.current.token1!}
