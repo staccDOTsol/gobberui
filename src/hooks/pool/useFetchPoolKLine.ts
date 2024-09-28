@@ -1,5 +1,5 @@
 import axios from '@/api/axios'
-import { birdeyeKlineApiAddress } from '@/utils/config/birdeyeAPI'
+import { birdeyeAuthorizeKey, birdeyeKlineApiAddress } from '@/utils/config/birdeyeAPI'
 import { MINUTE_MILLISECONDS } from '@/utils/date'
 import { throttle } from '@/utils/functionMethods'
 import { solToWSol } from '@raydium-io/raydium-sdk-v2'
@@ -40,7 +40,10 @@ const fetcher = (
   data: { items: RawKLineDataItem[] }
 }> => {
   return axios.get(url, {
-    skipError: true
+    skipError: true,
+    headers: {
+      'x-api-key': birdeyeAuthorizeKey
+    }
   })
 }
 

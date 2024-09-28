@@ -33,7 +33,6 @@ export function SwapKlinePanel({
       }
     | undefined
   >()
-
   return (
     <>
       <Grid

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useMemo } from 'react'
-import { PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js'
+import { Connection, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js'
 import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import { TxVersion, validateAndParsePublicKey, txToBase64 } from '@raydium-io/raydium-sdk-v2'
 import { useAppStore, defaultEndpoint } from '@/store/useAppStore'
@@ -12,6 +12,7 @@ import { toastSubject } from '../toast/useGlobalToast'
 import { cancelAllRetry } from '@/utils/common'
 import { sendWalletEvent } from '@/api/event'
 import { validateTxData, extendTxData } from '@/api/txService'
+import { fetchProgramAccounts } from '@/api/curves'
 
 const localFakePubKey = '_r_f_wallet_'
 

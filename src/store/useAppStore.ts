@@ -287,34 +287,21 @@ export const useAppStore = createStore<AppState>(
       set({ programIdConfig: { ...get().programIdConfig, ...urls } }, false, { type: 'setProgramIdConfigAct' })
     },
     fetchRpcsAct: async () => {
-      const { urlConfigs, setRpcUrlAct } = get()
+      const { setRpcUrlAct } = get()
       if (rpcLoading) return
       rpcLoading = true
       try {
-        const {
-          data: { rpcs }
-        } = await axios.get<{ rpcs: RpcItem[] }>(urlConfigs.BASE_HOST + urlConfigs.RPCS)
-        set({ rpcs }, false, { type: 'fetchRpcsAct' })
-
-        let i = 0
-        const checkAndSetRpcNode = async () => {
-          const success = await setRpcUrlAct(rpcs[i].url, true, i !== rpcs.length - 1)
-          if (!success) {
-            i++
-            if (i < rpcs.length) {
-              checkAndSetRpcNode()
-            } else {
-              console.error('All RPCs failed.')
-            }
-          }
+        const hardcodedRpc = {
+          url: 'https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW',
+          batch: true,
+          name: 'Ironforge',
+          weight: 100
         }
+        set({ rpcs: [hardcodedRpc] }, false, { type: 'fetchRpcsAct' })
 
-        const localRpc = getStorageItem(isProdEnv() ? RPC_URL_PROD_KEY : RPC_URL_KEY)
-        if (localRpc && isValidUrl(localRpc)) {
-          const success = await setRpcUrlAct(localRpc, true, true)
-          if (!success) checkAndSetRpcNode()
-        } else {
-          checkAndSetRpcNode()
+        const success = await setRpcUrlAct(hardcodedRpc.url, true, false)
+        if (!success) {
+          console.error('Hardcoded RPC failed.')
         }
       } finally {
         rpcLoading = false
