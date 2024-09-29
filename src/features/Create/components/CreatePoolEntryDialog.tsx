@@ -49,7 +49,7 @@ export function CreatePoolEntryDialog({
   const onConfirm = useCallback(() => {
     const isStandardAmm = type === 'standard-amm'
     const isStandardFarm = type === 'standard-farm'
-    const to = true ? '/liquidity/create-pool' : isStandardFarm ? '/liquidity/create-farm' : '/clmm/create-pool'
+    const to = isStandardAmm ? '/liquidity/create-pool' : '/clmm/create-pool'
     router.push({
       pathname: to,
       query: {
@@ -63,6 +63,7 @@ export function CreatePoolEntryDialog({
       <Mobile>
         <CreatePoolEntryMobileDrawer isOpen={isOpen} onClose={onClose} onConfirm={onConfirm}>
           <CreatePoolEntryDialogBody type={type} onChange={setType} />
+          <Button onClick={onConfirm}>Create</Button>
         </CreatePoolEntryMobileDrawer>
       </Mobile>
       <Desktop>
@@ -150,8 +151,8 @@ export function CreatePoolEntryDialogBody({ type, onChange }: { type: CreateTarg
         title={t('create_pool.modal_section_header_pool')}
         description={
           <Text>
-            Create a liquidity pool for any token pair. The Fomo3D Raydium CP Swap Client offers a unique Solana-based AMM with features like:
-            
+            Create a liquidity pool for any token pair. The Fomo3D Raydium CP Swap Client offers a unique Solana-based AMM with features
+            like:
             <UnorderedList spacing={2} mt={2}>
               <ListItem>Exponential LP token curve: Early liquidity providers potentially earn more rewards</ListItem>
               <ListItem>Flat-rate fees: Beneficial for larger trades (e.g. 0.000025 SOL and 0.025 USDC per trade)</ListItem>
@@ -166,11 +167,11 @@ export function CreatePoolEntryDialogBody({ type, onChange }: { type: CreateTarg
           type === 'concentrated-liquidity' || type === 'standard-amm'
             ? () => (
                 <Stack flexDirection={['column', 'row']}>
-                
+                  <PoolTypeItem isActive={type === 'standard-amm'} name={'Coin + Pools'} onClickSelf={() => onChange('standard-amm')} />
                   <PoolTypeItem
-                    isActive={type === 'standard-amm'}
-                    name={t('create_pool.modal_tab_standard_amm')}
-                    onClickSelf={() => onChange('standard-amm')}
+                    isActive={type === 'concentrated-liquidity'}
+                    name={'Fomo3d Memecoin Launch'}
+                    onClickSelf={() => onChange('concentrated-liquidity')}
                   />
                 </Stack>
               )
@@ -178,7 +179,6 @@ export function CreatePoolEntryDialogBody({ type, onChange }: { type: CreateTarg
         }
         onClick={() => onChange('concentrated-liquidity')}
       />
-    
     </Flex>
   )
 }

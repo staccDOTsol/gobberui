@@ -168,26 +168,6 @@ export default function SelectPoolTokenAndFee({ customTokens, completed, isLoadi
         {t('common.tokens')}
       </Text>
       <Flex gap="2" alignItems="center" mb="6">
-        <Box data-side="token1" flex="1" bg={colors.backgroundDark} rounded="xl" onClick={handleClick} sx={SelectBoxSx}>
-          <Text variant="label" mb="2">
-            {t('common.base_token')}
-          </Text>
-          <Flex gap="2" alignItems="center" justifyContent="space-between">
-            {tokens.token1 ? (
-              <Flex gap="2" alignItems="center">
-                <TokenAvatar token={tokens.token1} />
-                <Text variant="title" color={colors.textPrimary}>
-                  {tokens.token1.symbol}
-                </Text>
-              </Flex>
-            ) : (
-              <Text variant="title" fontSize="lg" opacity="0.5">
-                {t('common.select')}
-              </Text>
-            )}
-            <ChevronDown color={colors.textSecondary} opacity="0.5" />
-          </Flex>
-        </Box>
         <Box data-side="token2" flex="1" bg={colors.backgroundDark} rounded="xl" onClick={handleClick} sx={SelectBoxSx}>
           <Text variant="label" mb="2">
             {t('common.quote_token')}
@@ -210,7 +190,7 @@ export default function SelectPoolTokenAndFee({ customTokens, completed, isLoadi
         </Box>
       </Flex>
       <TokenSelectDialog customTokens={customTokens} onClose={onClose} isOpen={isOpen} filterFn={filterFn} onSelectValue={handleSelect} />
-      <ConnectedButton mt="8" isDisabled={!!error || !currentConfig} isLoading={isLoading || isExistingLoading} onClick={handleConfirm}>
+      <ConnectedButton mt="8" isLoading={isLoading || isExistingLoading} onClick={handleConfirm}>
         {error ? `${t('common.select')} ${t(error)}` : t('button.continue')}
       </ConnectedButton>
     </PanelCard>

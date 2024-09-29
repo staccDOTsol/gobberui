@@ -1,327 +1,324 @@
-import { Box, Flex, Grid, GridItem, HStack, Link, Text, useDisclosure } from '@chakra-ui/react'
-import { ApiClmmConfigInfo, ApiV3Token, solToWSol } from '@raydium-io/raydium-sdk-v2'
-import { useCallback, useRef, useState } from 'react'
-import { useTranslation, Trans } from 'react-i18next'
-import { shallow } from 'zustand/shallow'
+// @ts-nocheck
+'use client'
+
+import { useState, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { SystemProgram, ComputeBudgetProgram, Transaction, PublicKey, Keypair } from '@solana/web3.js'
+import { AnchorWallet, useAnchorWallet, useConnection, useWallet } from '@solana/wallet-adapter-react'
+import { Program, BN, AnchorProvider } from '@coral-xyz/anchor'
+import { FaTwitter, FaTelegram, FaDiscord, FaGithub } from 'react-icons/fa'
+
+import { createAssociatedTokenAccountInstruction, TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync } from '@solana/spl-token'
+
+import { Input, Textarea, Button, Box, VStack, Text, useToast, Icon, Flex, Image } from '@chakra-ui/react'
+
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults'
+import { irysUploader } from '@metaplex-foundation/umi-uploader-irys'
+import { mplToolbox } from '@metaplex-foundation/mpl-toolbox'
+import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters'
+import { TokenInfo } from '@raydium-io/raydium-sdk-v2'
 
 import PanelCard from '@/components/PanelCard'
-import { StepsRef } from '@/components/Steps'
-import SubPageNote from '@/components/SubPageNote'
-import PreviewDepositModal from '@/features/Clmm/components/PreviewDepositModal'
-import ChevronLeftIcon from '@/icons/misc/ChevronLeftIcon'
-import { CreatePoolBuildData, useAppStore, useClmmStore } from '@/store'
-import { colors } from '@/theme/cssVariables/colors'
-import { genCSS2GridTemplateColumns, genCSS3GridTemplateColumns } from '@/theme/detailConfig'
-import { debounce, exhaustCall } from '@/utils/functionMethods'
-import { routeBack, routeToPage } from '@/utils/routeTools'
-import { solToWSolToken } from '@/utils/token'
-import BN from 'bn.js'
-import Decimal from 'decimal.js'
-import useTokenPrice from '@/hooks/token/useTokenPrice'
-import SelectPoolToken from './components/SelectPoolTokenAndFee'
-import SetPriceAndRange from './components/SetPriceAndRange'
-import Stepper from './components/Stepper'
-import TokenAmountPairInputs from './components/TokenAmountInput'
-import { useEvent } from '@/hooks/useEvent'
+import { AMM } from './Amm'
 
-export default function CreateClmmPool() {
-  const isMobile = useAppStore((s) => s.isMobile)
-  const { t } = useTranslation()
-  const [createClmmPool, openPositionAct] = useClmmStore((s) => [s.createClmmPool, s.openPositionAct], shallow)
-  const { isOpen, onOpen, onClose } = useDisclosure()
-  const { isOpen: isLoading, onOpen: onLoading, onClose: offLoading } = useDisclosure()
-  const [step, setStep] = useState(0)
-  const [baseIn, setBaseIn] = useState(true)
-  const [createPoolData, setCreatePoolData] = useState<CreatePoolBuildData | undefined>()
-  const [isTxSending, setIsTxSending] = useState(false)
-  const debounceSetBuildData = debounce((data: CreatePoolBuildData) => setCreatePoolData(data), 150)
+const PROGRAM_ID = '65YAWs68bmR2RpQrs2zyRNTum2NRrdWzUfUTew9kydN9'
 
-  const { data: tokenPrices } = useTokenPrice({
-    mintList: [createPoolData?.extInfo.mockPoolInfo.mintA.address, createPoolData?.extInfo.mockPoolInfo.mintB.address]
-  })
+export default function CreateToken() {
+  const router = useRouter()
+  const { connection } = useConnection()
+  const wallet = useAnchorWallet()
+  const { publicKey } = useWallet()
+  const walletAdapter = useWallet()
 
-  const currentCreateInfo = useRef<{
-    token1?: ApiV3Token
-    token2?: ApiV3Token
-    config?: ApiClmmConfigInfo
-    startTime?: number
-    price: string
-    tickLower?: number
-    tickUpper?: number
-    priceLower?: string
-    priceUpper?: string
-    amount1?: string
-    amount2?: string
-    liquidity?: BN
-    inputA: boolean
-  }>({
-    inputA: true,
-    price: ''
-  })
+  const [tokenName, setTokenName] = useState('')
+  const [tokenSymbol, setTokenSymbol] = useState('')
+  const [tokenDescription, setTokenDescription] = useState('')
+  const [tokenImage, setTokenImage] = useState<File | null>(null)
+  const [isCreating, setIsCreating] = useState(false)
+  const toast = useToast()
 
-  const stepsRef = useRef<StepsRef>(null)
+  const [website, setWebsite] = useState<string | undefined>(undefined)
+  const [telegramHandle, setTelegramHandle] = useState<string | undefined>(undefined)
+  const [discordHandle, setDiscordHandle] = useState<string | undefined>(undefined)
+  const [githubHandle, setGithubHandle] = useState<string | undefined>(undefined)
+  const [twitterHandle, setTwitterHandle] = useState<string | undefined>(undefined)
 
-  const handleEdit = useCallback((step: number) => {
-    stepsRef.current?.setActiveStep(step)
-  }, [])
-
-  const handleStep1Confirm = useCallback(
-    ({ token1, token2, ammConfig }: { token1: ApiV3Token; token2: ApiV3Token; ammConfig: ApiClmmConfigInfo }) => {
-      onLoading()
-      currentCreateInfo.current.token1 = solToWSolToken(token1)
-      currentCreateInfo.current.token2 = solToWSolToken(token2)
-      currentCreateInfo.current.config = ammConfig
-      createClmmPool({
-        config: ammConfig,
-        token1: solToWSolToken(token1),
-        token2: solToWSolToken(token2),
-        price: '1',
-        forerunCreate: true
-      })
-        .then(({ buildData }) => {
-          if (!buildData) return
-          setBaseIn(solToWSol(token1.address).equals(solToWSol(buildData?.extInfo.mockPoolInfo?.mintA.address || '')))
-          setCreatePoolData(buildData)
-          stepsRef.current?.goToNext()
-        })
-        .finally(offLoading)
-    },
-    [createClmmPool]
-  )
-
-  const handlePriceChange = useCallback(
-    ({ price }: { price: string }) => {
-      const { token1, token2, config } = currentCreateInfo.current
-      if (!token1 || !token2 || !config) return
-      createClmmPool({ config, token1, token2, price: price && new Decimal(price).gt(0) ? price : '1', forerunCreate: true }).then(
-        ({ buildData }) => {
-          debounceSetBuildData(buildData)
-        }
-      )
-    },
-    [createClmmPool, debounceSetBuildData]
-  )
-
-  const handleStep2Confirm = useEvent(
-    (props: { price: string; tickLower: number; tickUpper: number; priceLower: string; priceUpper: string; startTime?: number }) => {
-      stepsRef.current?.goToNext()
-      currentCreateInfo.current = {
-        ...currentCreateInfo.current,
-        ...props
+  const [tokenAmount, setTokenAmount] = useState<string>('')
+  const [tokenAmountToBuy, setTokenAmountToBuy] = useState<string>('')
+  useEffect(() => {
+    console.log('tokenAmount', tokenAmount)
+    console.log('tokenAmountToBuy', tokenAmountToBuy)
+    try {
+      console.log('tokenAmount', tokenAmount)
+      if (tokenAmount && !isNaN(parseFloat(tokenAmount))) {
+        const solAmount = new BN(Math.floor(Number(tokenAmount) * 10 ** 9))
+        const buyTokens = amm.getBuyTokensForSol(solAmount).div(new BN(10 ** 6))
+        console.assert(buyTokens !== undefined, 'getBuyTokensForSol returned undefined')
+        setTokenAmountToBuy(buyTokens.toLocaleString())
       }
+    } catch (e) {
+      console.error('Error calculating token amount to buy:', e)
+      setTokenAmountToBuy('') // Reset to empty string on error
     }
+  }, [tokenAmount, tokenAmountToBuy])
+  const DEFAULT_TOKEN_RESERVES = 1000000000000000
+  const DEFAULT_VIRTUAL_SOL_RESERVE = 30000000000
+  const DEFUALT_VIRTUAL_TOKEN_RESERVE = 793100000000000
+  const DEFUALT_INITIAL_VIRTUAL_TOKEN_RESERVE = 1073000000000000
+  const DEFAULT_FEE_BASIS_POINTS = 50
+  const amm = new AMM(
+    new BN(DEFAULT_VIRTUAL_SOL_RESERVE),
+    new BN(DEFUALT_VIRTUAL_TOKEN_RESERVE),
+    new BN(30000000000),
+    new BN(793100000000000),
+    new BN(DEFUALT_INITIAL_VIRTUAL_TOKEN_RESERVE)
   )
+  const umi = publicKey
+    ? createUmi(connection.rpcEndpoint)
+        .use(irysUploader())
+        .use(mplToolbox())
+        .use(walletAdapterIdentity(walletAdapter as any))
+    : null
 
-  const handleStep3Confirm = useCallback(
-    ({ inputA, liquidity, amount1, amount2 }: { inputA: boolean; liquidity: BN; amount1: string; amount2: string }) => {
-      currentCreateInfo.current.inputA = inputA
-      currentCreateInfo.current.liquidity = liquidity
-      currentCreateInfo.current.amount1 = amount1
-      currentCreateInfo.current.amount2 = amount2
-      onOpen()
-    },
-    []
-  )
+  const handleCreate = useCallback(async () => {
+    if (!wallet || !umi) {
+      console.error('Missing required dependencies')
+      return
+    }
 
-  const handleSwitchBase = useCallback(
-    (baseIn: boolean) => {
-      const [token1, token2] = [currentCreateInfo.current.token1, currentCreateInfo.current.token2]
-      currentCreateInfo.current.token1 = token2
-      currentCreateInfo.current.token2 = token1
-      setBaseIn(baseIn)
-    },
-    [setBaseIn]
-  )
+    const provider = new AnchorProvider(connection, wallet, {})
+    const programId = new PublicKey(PROGRAM_ID)
+    const idl = await Program.fetchIdl(programId, provider)
+    const program = new Program(idl!, provider)
 
-  const handleChangeStep = useCallback((newStep: number) => {
-    setStep(newStep)
-  }, [])
+    setIsCreating(true)
+    try {
+      const mint = Keypair.generate()
+      const baseTokenInfo: TokenInfo = {
+        address: mint.publicKey.toBase58(),
+        name: tokenName ? tokenName : 'Fomocoin',
+        symbol: tokenSymbol ? tokenSymbol : 'MEME',
+        decimals: 6,
+        programId: TOKEN_2022_PROGRAM_ID.toBase58(),
+        chainId: 101,
+        logoURI: '',
+        tags: [],
+        extensions: {},
+        priority: 1000
+      }
 
-  const handleCreateAndOpen = useEvent(
-    exhaustCall(async () => {
-      setIsTxSending(true)
-      const { token1, token2, config, price, startTime } = currentCreateInfo.current
-      const { buildData } = await createClmmPool({
-        config: config!,
-        token1: token1!,
-        token2: token2!,
-        price,
-        startTime
+      let imageUri = ''
+      if (tokenImage) {
+        console.log('Uploading token image')
+        const genericFile = {
+          buffer: new Uint8Array(await tokenImage.arrayBuffer()),
+          fileName: tokenImage.name,
+          displayName: tokenImage.name,
+          uniqueName: `${Date.now()}-${tokenImage.name}`,
+          contentType: tokenImage.type,
+          extension: tokenImage.name.split('.').pop() || '',
+          tags: []
+        }
+        const [uploadedUri] = await umi.uploader.upload([genericFile])
+        console.log('Image uploaded, URI:', uploadedUri)
+        const response = await fetch(uploadedUri)
+        imageUri = response.url
+        console.log('Image URI:', imageUri)
+      }
+
+      const metadata = {
+        name: baseTokenInfo.name,
+        symbol: baseTokenInfo.symbol,
+        description: tokenDescription + ' ' + 'launched on fomo3d.fun',
+        image: imageUri
+      }
+      console.log('Prepared metadata:', metadata)
+
+      console.log('Uploading metadata')
+      const metadataUri = await umi.uploader.uploadJson(metadata)
+      console.log('Metadata uploaded, URI:', metadataUri)
+      const metadataResponse = await fetch(metadataUri)
+      const tokenUri = metadataResponse.url
+      console.log('Token URI:', tokenUri)
+
+      console.log('Preparing create instruction')
+      // @ts-ignore
+      const ix = await program.methods
+        .create(baseTokenInfo.name, baseTokenInfo.symbol, tokenUri)
+        .accounts({
+          mint: mint.publicKey,
+          creator: wallet.publicKey,
+          program: program.programId,
+          tokenProgram2022: TOKEN_2022_PROGRAM_ID
+        })
+        .instruction()
+      console.log('Create instruction prepared')
+
+      const tx = new Transaction().add(
+        ComputeBudgetProgram.setComputeUnitLimit({ units: 666_000 }),
+        SystemProgram.transfer({
+          fromPubkey: wallet.publicKey,
+          toPubkey: mint.publicKey,
+          lamports: 0.007 * 10 ** 9
+        }),
+        ix,
+        createAssociatedTokenAccountInstruction(
+          wallet.publicKey,
+          getAssociatedTokenAddressSync(mint.publicKey, wallet.publicKey, true, TOKEN_2022_PROGRAM_ID),
+          wallet.publicKey,
+          mint.publicKey,
+          TOKEN_2022_PROGRAM_ID
+        )
+      )
+
+      if (tokenAmountToBuy && Number(tokenAmountToBuy) > 0) {
+        const bAmount = new BN(Number(tokenAmountToBuy) * 10 ** 6)
+        console.log('Processing first buyer transaction')
+        // @ts-ignore
+        const buyIx = await program.methods
+          .buy(bAmount, new BN(Number.MAX_SAFE_INTEGER))
+          .accounts({
+            hydra: new PublicKey('AZHP79aixRbsjwNhNeuuVsWD4Gdv1vbYQd8nWKMGZyPZ'), // Replace with actual public key
+            user: wallet.publicKey,
+            mint: mint.publicKey,
+            feeRecipient: new PublicKey('AZHP79aixRbsjwNhNeuuVsWD4Gdv1vbYQd8nWKMGZyPZ'),
+            tokenProgram: TOKEN_2022_PROGRAM_ID,
+            program: program.programId
+          })
+          .instruction()
+        tx.add(buyIx)
+      }
+
+      tx.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 333333 }))
+      tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
+      tx.feePayer = wallet.publicKey
+      tx.sign(mint)
+
+      console.log('Signing transaction with wallet')
+      const signedTx = await wallet.signTransaction(tx)
+
+      console.log('Sending transaction')
+      const txSignature = await connection.sendRawTransaction(signedTx.serialize(), {
+        skipPreflight: true,
+        maxRetries: 2
       })
+      await connection.confirmTransaction(txSignature, 'recent')
+      console.log('Transaction successful:', txSignature)
 
-      if (!buildData) return
+      router.push(`https://fomo3d.fun/${mint.publicKey.toBase58()}`)
+    } catch (error) {
+      console.error('Error creating token:', error)
+    } finally {
+      setIsCreating(false)
+    }
+  }, [wallet, umi, connection, router, tokenName, tokenSymbol, tokenDescription, tokenImage, tokenAmount])
 
-      const [mintAAmount, mintBAmount] = [
-        new Decimal(currentCreateInfo.current.amount1!).mul(10 ** buildData.extInfo.mockPoolInfo.mintA.decimals).toFixed(0),
-        new Decimal(currentCreateInfo.current.amount2!).mul(10 ** buildData.extInfo.mockPoolInfo.mintB.decimals).toFixed(0)
-      ]
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
 
-      openPositionAct({
-        poolInfo: buildData.extInfo.mockPoolInfo,
-        poolKeys: buildData.extInfo.address,
-        tickLower: Math.min(currentCreateInfo.current.tickLower!, currentCreateInfo.current.tickUpper!),
-        tickUpper: Math.max(currentCreateInfo.current.tickLower!, currentCreateInfo.current.tickUpper!),
-        base: currentCreateInfo.current.inputA ? 'MintA' : 'MintB',
-        baseAmount: currentCreateInfo.current.inputA ? mintAAmount : mintBAmount,
-        otherAmountMax: currentCreateInfo.current.inputA ? mintBAmount : mintAAmount,
-        createPoolBuildData: buildData,
-        onConfirmed: () => routeToPage('pools'),
-        onFinally: () => setIsTxSending(false)
-      })
-    })
-  )
-  const friendlySentence = [
-    t('create_pool.clmm_create_pool_note_step1'),
-    t('create_pool.clmm_create_pool_note_step2'),
-    t('create_pool.clmm_create_pool_note_step3')
-  ][step]
-
-  const needToShowSelectPoolToken = isMobile ? step === 0 : step >= 0
-  const needToShowSetPriceAndRange = isMobile ? step === 1 : step >= 1
-  const needToShowTokenAmountInput = isMobile ? step === 2 : step >= 2
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setTokenImage(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPreviewImage(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   return (
-    <>
-      <Grid
-        gridTemplate={[
-          `
-            "back  " auto
-            "step  " auto
-            "panel " auto
-            "note  " minmax(80px, 1fr) / 1fr  
-          `,
-          `
-            "back word  " auto
-            "step panel " auto
-            "note panel " 1fr / ${genCSS2GridTemplateColumns({ rightLeft: 344, center: 500 })}
-          `,
-          `
-            "back word  . " auto
-            "step panel . " auto
-            "note panel . " 1fr / ${genCSS3GridTemplateColumns({ rightLeft: 344, center: 500 })}
-          `
-        ]}
-        columnGap={[4, '5%']}
-        rowGap={[4, '2vh']}
-        mt={[2, 8]}
-      >
-        {/* left */}
-        <GridItem area={'back'}>
-          <Flex>
-            <HStack
-              cursor="pointer"
-              onClick={() => {
-                routeBack()
-              }}
-              color={colors.textTertiary}
-              fontWeight="500"
-              fontSize={['md', 'xl']}
-            >
-              <ChevronLeftIcon />
-              <Text>{t('common.back')}</Text>
-            </HStack>
-          </Flex>
-        </GridItem>
+    <Box minH="100vh" bg="black" p={8} color="#39FF14">
+      <Text fontSize="4xl" fontWeight="bold" mb={6} className="animate-pulse" textAlign="center">
+        Launch Your Fomocoin 🚀
+      </Text>
+      <PanelCard maxWidth="90%" margin="0 auto">
+        <Text fontSize="2xl" fontWeight="bold" mb={4}>
+          Fomocoin Details
+        </Text>
+        <VStack spacing={6} align="stretch">
+          <Input placeholder="Token Name" value={tokenName} onChange={(e) => setTokenName(e.target.value)} required />
+          <Input placeholder="Token Symbol" value={tokenSymbol} onChange={(e) => setTokenSymbol(e.target.value)} required />
+          <Textarea placeholder="Token Description" value={tokenDescription} onChange={(e) => setTokenDescription(e.target.value)} />
 
-        <GridItem area="step">
-          <Stepper stepRef={stepsRef} onChange={handleChangeStep} />
-        </GridItem>
-
-        <GridItem area="note">
-          <Box
-            w={['unset', 'clamp(300px, 100%, 500px)']}
-            position={['absolute', 'unset']}
-            left={'20px'}
-            right={'20px'}
-            bottom={'calc(20px + 54px)' /* 54px is mobile bottom nav's height */}
-            zIndex={100}
-          >
-            <SubPageNote
-              canInteract={isMobile}
-              title={t('create_pool.clmm_please_note')}
-              description={
-                <Text fontSize="sm" color={colors.textTertiary}>
-                  <Trans i18nKey="create_pool.clmm_please_note_des">
-                    <Link href="https://docs.raydium.io/raydium/pool-creation/creating-a-clmm-pool-and-farm" isExternal>
-                      CLMM
-                    </Link>
-                    <Link href="https://docs.raydium.io/raydium/pool-creation/creating-a-standard-amm-pool" isExternal>
-                      Standard
-                    </Link>
-                  </Trans>
-                </Text>
-              }
-            />
+          <Box>
+            <Text mb={2}>Token Image</Text>
+            <Flex alignItems="center">
+              <Input type="file" accept="image/*" onChange={handleImageChange} display="none" id="file-upload" />
+              <label htmlFor="file-upload">
+                <Button as="span" colorScheme="blue" mr={4}>
+                  Choose File
+                </Button>
+              </label>
+              {previewImage && <Image src={previewImage} alt="Preview" boxSize="100px" objectFit="cover" borderRadius="md" />}
+            </Flex>
           </Box>
-        </GridItem>
 
-        <GridItem area="word" display={['none', 'unset']}>
-          <Text whiteSpace={'pre-line'} w="fit-content" cursor="pointer" color={colors.textSecondary} fontWeight="500" fontSize="xl">
-            {friendlySentence}
+          <Input placeholder="Website (optional)" value={website} onChange={(e) => setWebsite(e.target.value)} />
+
+          <Text fontSize="sm" color="gray.500">
+            Suggested links (optional):
           </Text>
-        </GridItem>
-
-        <GridItem area="panel">
-          <Flex flexDirection="column" gap={3}>
-            {needToShowSelectPoolToken && (
-              <SelectPoolToken
-                isLoading={isLoading}
-                completed={step > 0}
-                onConfirm={handleStep1Confirm}
-                onEdit={handleEdit}
-                customTokens={[]}
-              />
+          <Box>
+            {twitterHandle !== undefined ? (
+              <Input placeholder="Twitter Handle" value={twitterHandle} onChange={(e) => setTwitterHandle(e.target.value)} />
+            ) : (
+              <Button variant="outline" leftIcon={<Icon as={FaTwitter} />} onClick={() => setTwitterHandle('')}>
+                Add X (Twitter)
+              </Button>
             )}
-            {needToShowSetPriceAndRange ? (
-              <SetPriceAndRange
-                initState={{
-                  currentPrice: createPoolData?.extInfo.mockPoolInfo.price.toString() || currentCreateInfo.current.price,
-                  priceRange: [currentCreateInfo.current.priceLower || '', currentCreateInfo.current.priceUpper || ''],
-                  startTime: currentCreateInfo.current.startTime
-                }}
-                completed={step > 1}
-                token1={currentCreateInfo.current.token1!}
-                token2={currentCreateInfo.current.token2!}
-                tokenPrices={tokenPrices}
-                tempCreatedPool={createPoolData?.extInfo.mockPoolInfo}
-                baseIn={baseIn}
-                onPriceChange={handlePriceChange}
-                onSwitchBase={handleSwitchBase}
-                onConfirm={handleStep2Confirm}
-                onEdit={handleEdit}
-              />
-            ) : null}
+          </Box>
+          <Box>
+            {telegramHandle !== undefined ? (
+              <Input placeholder="Telegram Handle" value={telegramHandle} onChange={(e) => setTelegramHandle(e.target.value)} />
+            ) : (
+              <Button variant="outline" leftIcon={<Icon as={FaTelegram} />} onClick={() => setTelegramHandle('')}>
+                Add Telegram
+              </Button>
+            )}
+          </Box>
+          <Box>
+            {discordHandle !== undefined ? (
+              <Input placeholder="Discord Handle" value={discordHandle} onChange={(e) => setDiscordHandle(e.target.value)} />
+            ) : (
+              <Button variant="outline" leftIcon={<Icon as={FaDiscord} />} onClick={() => setDiscordHandle('')}>
+                Add Discord
+              </Button>
+            )}
+          </Box>
+          <Box>
+            {githubHandle !== undefined ? (
+              <Input placeholder="GitHub Handle" value={githubHandle} onChange={(e) => setGithubHandle(e.target.value)} />
+            ) : (
+              <Button variant="outline" leftIcon={<Icon as={FaGithub} />} onClick={() => setGithubHandle('')}>
+                Add GitHub
+              </Button>
+            )}
+          </Box>
+          <Box mt={4}>
+            <Text fontSize="sm" mb={2}>
+              Tokens you'll receive:
+            </Text>
+            <Text fontSize="lg" fontWeight="bold">
+              {tokenAmountToBuy} tokens
+            </Text>
+          </Box>
+          <Input placeholder="Be the first buyer?" value={tokenAmount} onChange={(e) => setTokenAmount(e.target.value)} />
 
-            {needToShowTokenAmountInput ? (
-              <PanelCard px={[3, 6]} py={[3, 4]} fontSize="sm" fontWeight="500" color={colors.textSecondary}>
-                <TokenAmountPairInputs
-                  baseIn={baseIn}
-                  tempCreatedPool={createPoolData!.extInfo.mockPoolInfo}
-                  priceLower={currentCreateInfo.current.priceLower!}
-                  priceUpper={currentCreateInfo.current.priceUpper!}
-                  tickLower={currentCreateInfo.current.tickLower!}
-                  tickUpper={currentCreateInfo.current.tickUpper!}
-                  onConfirm={handleStep3Confirm}
-                />
-              </PanelCard>
-            ) : null}
-          </Flex>
-        </GridItem>
-      </Grid>
-      {createPoolData && isOpen ? (
-        <PreviewDepositModal
-          tokenPrices={tokenPrices}
-          isOpen={isOpen}
-          isSending={isTxSending}
-          isCreatePool
-          pool={createPoolData.extInfo.mockPoolInfo}
-          baseIn={baseIn}
-          onConfirm={handleCreateAndOpen}
-          onClose={onClose}
-          tokenAmount={[currentCreateInfo.current.amount1 || '0', currentCreateInfo.current.amount2 || '1']}
-          priceRange={[currentCreateInfo.current.priceLower || '2', currentCreateInfo.current.priceUpper || '3']}
-        />
-      ) : null}
-    </>
+          <Button
+            type="submit"
+            colorScheme="green"
+            width="full"
+            onClick={handleCreate}
+            isLoading={isCreating}
+            size="lg"
+            fontSize="xl"
+            height="60px"
+          >
+            Launch Fomocoin
+          </Button>
+        </VStack>
+      </PanelCard>
+    </Box>
   )
 }

@@ -1,8 +1,11 @@
 import dynamic from 'next/dynamic'
-const CreatePage = dynamic(() => import('@/features/Create/StandardPool'))
+import { useLiquidityStore, useAppStore } from '@/store'
+import { useEffect } from 'react'
+
+const CreatePool = dynamic(() => import('@/features/Create/StandardPool'))
 
 function CreatePoolPage() {
-  return <CreatePage />
+  return <CreatePool />
 }
 
 export default CreatePoolPage

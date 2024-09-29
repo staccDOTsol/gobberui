@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   ApiV3PoolInfoStandardItem,
   ApiV3PoolInfoStandardItemCpmm,
@@ -83,9 +84,9 @@ interface LiquidityStore {
       baseAmount: string
       quoteAmount: string
       startTime?: Date
-    name: string
-    symbol: string
-    uri: string
+      name: string
+      symbol: string
+      uri: string
     } & TxCallbackProps
   ) => Promise<string>
 
@@ -158,16 +159,24 @@ export const useLiquidityStore = createStore<LiquidityStore>(
         ...params,
         poolKeys: {
           mintLp: params.poolInfo.lpMint,
-          programId: new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj").toBase58(),
+          programId: new PublicKey('CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj').toBase58(),
           mintA: params.poolInfo.mintA,
           mintB: params.poolInfo.mintB,
           id: params.poolInfo.id,
-          authority: getPdaPoolAuthority(new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj")).publicKey.toBase58(),
+          authority: getPdaPoolAuthority(new PublicKey('CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj')).publicKey.toBase58(),
           config: params.poolInfo.config,
           vault: {
-            A: getPdaVault(new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj"), new PublicKey(params.poolInfo.id), new PublicKey(params.poolInfo.mintA.address)).publicKey.toBase58(),
-            B: getPdaVault(new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj"), new PublicKey(params.poolInfo.id), new PublicKey(params.poolInfo.mintB.address)).publicKey.toBase58()
-          },
+            A: getPdaVault(
+              new PublicKey('CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj'),
+              new PublicKey(params.poolInfo.id),
+              new PublicKey(params.poolInfo.mintA.address)
+            ).publicKey.toBase58(),
+            B: getPdaVault(
+              new PublicKey('CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj'),
+              new PublicKey(params.poolInfo.id),
+              new PublicKey(params.poolInfo.mintB.address)
+            ).publicKey.toBase58()
+          }
         },
         inputAmount: new BN(new Decimal(params.inputAmount).mul(10 ** params.poolInfo[baseIn ? 'mintA' : 'mintB'].decimals).toFixed(0)),
         slippage: percentSlippage,
@@ -310,9 +319,15 @@ export const useLiquidityStore = createStore<LiquidityStore>(
       if (!raydium) return ''
       const { poolInfo, lpAmount, amountA, amountB } = params
       const computeBudgetConfig = await getComputeBudgetConfig()
-      var pi = ((await new Connection("https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW").getAccountInfo(new PublicKey(poolInfo.id)))?.data as Buffer);
-      const configInfo = await new Connection("https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW").getAccountInfo(new PublicKey(pi.slice(8, 40)));
-      const config = CpmmConfigInfoLayout.decode(configInfo?.data as Buffer);
+      var pi = (
+        await new Connection('https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW').getAccountInfo(
+          new PublicKey(poolInfo.id)
+        )
+      )?.data as Buffer
+      const configInfo = await new Connection('https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW').getAccountInfo(
+        new PublicKey(pi.slice(8, 40))
+      )
+      const config = CpmmConfigInfoLayout.decode(configInfo?.data as Buffer)
       const normalizedConfig = {
         id: new PublicKey(pi.slice(8, 40)).toString(),
         protocolFeeRate: 12000,
@@ -334,16 +349,24 @@ export const useLiquidityStore = createStore<LiquidityStore>(
         poolKeys: {
           ...poolInfo,
           mintLp: poolInfo.lpMint,
-          programId: new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj").toBase58(),
+          programId: new PublicKey('CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj').toBase58(),
           mintA: poolInfo.mintA,
           mintB: poolInfo.mintB,
           id: poolInfo.id,
-          authority: getPdaPoolAuthority(new PublicKey(new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj"))).publicKey.toBase58(),
+          authority: getPdaPoolAuthority(new PublicKey(new PublicKey('CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj'))).publicKey.toBase58(),
           config: normalizedConfig,
           vault: {
-            A: getPdaVault(new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj"), new PublicKey(poolInfo.id), new PublicKey(poolInfo.mintA.address)).publicKey.toBase58(),
-            B: getPdaVault(new PublicKey("CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj"), new PublicKey(poolInfo.id), new PublicKey(poolInfo.mintB.address)).publicKey.toBase58()
-          },
+            A: getPdaVault(
+              new PublicKey('CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj'),
+              new PublicKey(poolInfo.id),
+              new PublicKey(poolInfo.mintA.address)
+            ).publicKey.toBase58(),
+            B: getPdaVault(
+              new PublicKey('CVF4q3yFpyQwV8DLDiJ9Ew6FFLE1vr5ToRzsXYQTaNrj'),
+              new PublicKey(poolInfo.id),
+              new PublicKey(poolInfo.mintB.address)
+            ).publicKey.toBase58()
+          }
         }
       })
 

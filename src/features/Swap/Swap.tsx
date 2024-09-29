@@ -199,6 +199,7 @@ export default function Swap() {
     if (!user) return
 
     try {
+      // @ts-ignore
       const tx = await amm.program.methods
         .sell(tokenAmount, minSolAmount)
         .accounts({
