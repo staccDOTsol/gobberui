@@ -20,7 +20,7 @@ export function Providers({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const queryEnv = searchParams?.get('env');
   const [client] = useState(new QueryClient());
-  const [env, setEnv] = useState<Env>((queryEnv === 'mainnet' || queryEnv === 'devnet') ? queryEnv : 'mainnet');
+  const [env, setEnv] = useState<Env>('mainnet');
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),

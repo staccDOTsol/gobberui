@@ -7,7 +7,7 @@ type EnvContext = {
 };
 
 const DEFAULT_CONTEXT: EnvContext = {
-  env: 'devnet',
+  env: 'mainnet',
 };
 
 export const EnvContext = createContext<EnvContext>(DEFAULT_CONTEXT);
