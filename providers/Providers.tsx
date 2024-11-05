@@ -47,11 +47,6 @@ export function Providers({ children }: { children: ReactNode }) {
     switch (env) {
       case 'mainnet':
         return "https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW";
-      case 'localhost':
-        return 'http://localhost:8899';
-      case 'devnet':
-      default:
-        return "https://rpc.ironforge.network/mainnet?apiKey=01HRZ9G6Z2A19FY8PR4RF4J4PW"  ;
     }
   }, [env]);
 
