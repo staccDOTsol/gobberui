@@ -1,6 +1,6 @@
 import { Center, Container, Flex, Group, Menu, Title } from '@mantine/core';
 import { IconChevronDown } from '@tabler/icons-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { WalletConnectButton, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 import classes from './Header.module.css';
 import { MetaplexLogo, MetaplexLogoVariant } from '../MetaplexLogo';
@@ -38,7 +38,7 @@ export function Header({ env, setEnv }: { env: string; setEnv: (env: Env) => voi
         </Flex>
         <Group>
           <HeaderLink label="Create" link="/create2" />
-          <WalletMultiButton />
+          <WalletConnectButton />
           <Menu trigger="hover" transitionProps={{ exitDuration: 0 }} withinPortal>
             <Menu.Target>
               <a

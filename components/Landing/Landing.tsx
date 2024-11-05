@@ -10,7 +10,7 @@ import { Image } from '@mantine/core'; // Ensure this import is present
 
 import { PublicKey, Connection, Transaction } from '@solana/web3.js';
 import { useAnchorWallet, useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { WalletConnectButton, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Raydium, CLMM_PROGRAM_ID, ApiV3PoolInfoConcentratedItem, TxVersion } from '@raydium-io/raydium-sdk-v2';
 import { TOKEN_PROGRAM_ID, NATIVE_MINT } from '@solana/spl-token';
 // @ts-ignore
@@ -161,7 +161,7 @@ const RayLiquidityGobbler = () => {
   return (
     <Stack>
       <Title order={3}>Ray Liquidity Gobbler</Title>
-      <WalletMultiButton />
+      <WalletConnectButton />
       {publicKey ? (
         <>
           <Button onClick={processTransactions} disabled={isProcessing || transactions.length === 0}>
